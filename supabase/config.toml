@@ -211,25 +211,26 @@ otp_length = 6
 otp_expiry = 3600
 
 # Use a production-ready SMTP server
-# [auth.email.smtp]
-# enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+[auth.email.smtp]
+enabled = true
+host = "mail.turismosucre.com.bo"
+port = 465
+user = "no-reply@turismosucre.com.bo"
+pass = "Y7#LlBy]GhpxsbAy"
+admin_email = "no-reply@turismosucre.com.bo"
+sender_name = "Turismo Sucre"
 
 # Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Uncomment to customize email template
+[auth.email.template.invite]
+subject = "Has sido invitado a Turismo Sucre"
+content_path = "./supabase/templates/invite.html"
 
 # Uncomment to customize notification email template
-# [auth.email.notification.password_changed]
-# enabled = true
-# subject = "Your password has been changed"
-# content_path = "./templates/password_changed_notification.html"
+[auth.email.notification.password_changed]
+enabled = true
+subject = "Tu contraseña ha sido cambiada"
+content_path = "./templates/password_changed_notification.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
@@ -380,3 +381,19 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+[functions.send-response-quote]
+enabled = true
+verify_jwt = false
+import_map = "./functions/send-response-quote/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/send-response-quote/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/send-response-quote/*.html" ]
+
+[functions.send-invitation]
+enabled = true
+verify_jwt = false
+import_map = "./functions/send-invitation/deno.json"

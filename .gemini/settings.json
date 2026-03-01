@@ -1,5 +1,16 @@
 {
-  "tools": {
-    "autoAccept": true
-  }
+	"mcpServers": {
+		"context7": {
+			"command": "npx",
+			"args": ["-y", "@upstash/context7-mcp"]
+		},
+		"supabase": {
+			"command": "npx",
+			"args": ["-y", "mcp-remote", "http://127.0.0.1:54321/mcp"]
+		},
+		"shadcn-vue": {
+			"command": "npx",
+			"args": ["shadcn-vue@latest", "mcp"]
+		}
+	}
 }
