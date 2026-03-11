@@ -156,6 +156,14 @@ watch([selectedServiceId, dateService], async ([sId, d]) => {
 	}
 })
 
+// Reset custom description when the user changes the selected service
+// We ignore the initial assignment where oldId is empty/undefined
+watch(selectedServiceId, (newId, oldId) => {
+    if (oldId && newId !== oldId) {
+        customDescription.value = ''
+    }
+})
+
 const finalPrice = computed(() => {
 	if (manualPrice.value !== null && manualPrice.value !== 0)
 		return manualPrice.value
@@ -267,7 +275,7 @@ const onSave = async () => {
 
 				<div class="grid gap-2">
 					<Label
-						>Descripción
+						>Servicio especial
 						{{
 							!selectedServiceId ? '(Requerida para manual)' : '(Opcional)'
 						}}</Label
