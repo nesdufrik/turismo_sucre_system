@@ -22,8 +22,21 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog'
+import { Filter, X } from 'lucide-vue-next'
+import { Badge } from '@/components/ui/badge'
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from '@/components/ui/popover'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
 import { toast } from 'vue-sonner'
 import type { Tables } from '@/types/database.types'
 
@@ -32,14 +45,13 @@ const props = defineProps<{
 	hojaId: number | null
 	quoteId: number
 	pax: number
-    itemToEdit?: QuoteItemWithDetails | null
+	itemToEdit?: QuoteItemWithDetails | null
 }>()
 
 const emit = defineEmits<{
 	(e: 'update:open', value: boolean): void
 	(e: 'saved'): void
 }>()
-
 
 const hotels = ref<Tables<'hoteles'>[]>([])
 const roomTypes = ref<Tables<'tiposhabitacion'>[]>([])
@@ -49,6 +61,37 @@ const selectedHotelObject = ref<Tables<'hoteles'> | null>(null)
 
 // Form State
 const selectedHotelId = ref<string>('')
+const searchableSelectRef = ref<any>(null)
+// Filters State
+const activeFilters = ref({
+	ciudad: '',
+})
+
+const removeFilter = (key: 'ciudad') => {
+	activeFilters.value[key] = ''
+	searchableSelectRef.value?.triggerSearch()
+}
+
+watch(
+	activeFilters,
+	async () => {
+		let finalQuery = ''
+		if (activeFilters.value.ciudad) {
+			finalQuery += ` $ciudad:${activeFilters.value.ciudad}`
+		}
+
+		if (finalQuery.trim()) {
+			const results = await InventoryService.searchHotels(finalQuery)
+			hotels.value = results || []
+		} else {
+			await loadHotels()
+		}
+
+		searchableSelectRef.value?.triggerSearch()
+	},
+	{ deep: true },
+)
+
 const selectedRoomId = ref<string>('')
 const quantityRooms = ref(1)
 const appliesCommission = ref(false)
@@ -74,7 +117,11 @@ const loadHotels = async () => {
 }
 
 const searchHotels = async (query: string) => {
-	return await InventoryService.searchHotels(query)
+	let finalQuery = query
+	if (activeFilters.value.ciudad) {
+		finalQuery += ` $ciudad:${activeFilters.value.ciudad}`
+	}
+	return await InventoryService.searchHotels(finalQuery)
 }
 
 const loadRooms = async (hotelId: number) => {
@@ -89,52 +136,58 @@ const loadRooms = async (hotelId: number) => {
 onMounted(() => {
 	loadHotels()
 
-    if (props.itemToEdit) {
-        // --- EDIT MODE ---
-        if (props.itemToEdit.tiposhabitacion?.hoteles && props.itemToEdit.tiposhabitacion.hotel_id) {
-                const mockHotel = { 
-                hotel_id: props.itemToEdit.tiposhabitacion.hotel_id,
-                nombre: props.itemToEdit.tiposhabitacion.hoteles.nombre 
-            } as any
-            
-            selectedHotelObject.value = mockHotel
-            selectedHotelId.value = mockHotel.hotel_id.toString()
-            
-            if (!hotels.value.find(h => h.hotel_id === mockHotel.hotel_id)) {
-                hotels.value = [mockHotel, ...hotels.value]
-            }
-        }
-        
-        // Set Room ID
-        selectedRoomId.value = props.itemToEdit.habitacion_id?.toString() || ''
-        dateCheckIn.value = props.itemToEdit.fecha_servicio_inicio || ''
-        dateCheckOut.value = props.itemToEdit.fecha_servicio_fin || ''
-        manualPrice.value = props.itemToEdit.habitacion_id ? 0 : props.itemToEdit.precio_unitario_snapshot
-        customDescription.value = props.itemToEdit.descripcion_snapshot || ''
+	if (props.itemToEdit) {
+		// --- EDIT MODE ---
+		if (
+			props.itemToEdit.tiposhabitacion?.hoteles &&
+			props.itemToEdit.tiposhabitacion.hotel_id
+		) {
+			const mockHotel = {
+				hotel_id: props.itemToEdit.tiposhabitacion.hotel_id,
+				nombre: props.itemToEdit.tiposhabitacion.hoteles.nombre,
+			} as any
+
+			selectedHotelObject.value = mockHotel
+			selectedHotelId.value = mockHotel.hotel_id.toString()
+
+			if (!hotels.value.find((h) => h.hotel_id === mockHotel.hotel_id)) {
+				hotels.value = [mockHotel, ...hotels.value]
+			}
+		}
+
+		// Set Room ID
+		selectedRoomId.value = props.itemToEdit.habitacion_id?.toString() || ''
+		dateCheckIn.value = props.itemToEdit.fecha_servicio_inicio || ''
+		dateCheckOut.value = props.itemToEdit.fecha_servicio_fin || ''
+		manualPrice.value = props.itemToEdit.habitacion_id
+			? 0
+			: props.itemToEdit.precio_unitario_snapshot
+		customDescription.value = props.itemToEdit.descripcion_snapshot || ''
 		appliesCommission.value = props.itemToEdit.aplica_comision || false
-    } else {
-        // --- CREATE MODE ---
-        selectedHotelId.value = ''
-        selectedHotelObject.value = null
-        selectedRoomId.value = ''
-        roomTypes.value = []
-        quantityRooms.value = 1
-        dateCheckIn.value = new Date().toISOString().split('T')[0] || ''
-        dateCheckOut.value = ''
-        manualPrice.value = null
-        foundPrice.value = null
-        customDescription.value = ''
+	} else {
+		// --- CREATE MODE ---
+		selectedHotelId.value = ''
+		selectedHotelObject.value = null
+		selectedRoomId.value = ''
+		roomTypes.value = []
+		quantityRooms.value = 1
+		dateCheckIn.value = new Date().toISOString().split('T')[0] || ''
+		dateCheckOut.value = ''
+		manualPrice.value = null
+		foundPrice.value = null
+		customDescription.value = ''
 		appliesCommission.value = false
-    }
+	}
 })
 
-watch(selectedHotelId, (newId) => {	// Only clear room if we are NOT in initial edit load (which we can't easily detect here without a flag)
-    // Or just clear it. If user changes hotel, room must be cleared.
-    // Issue: If we set selectedHotelId programmatically during edit load, this clears room.
-    // Solution: We are not setting selectedHotelId in edit mode above because it was hard.
-    
+watch(selectedHotelId, (newId) => {
+	// Only clear room if we are NOT in initial edit load (which we can't easily detect here without a flag)
+	// Or just clear it. If user changes hotel, room must be cleared.
+	// Issue: If we set selectedHotelId programmatically during edit load, this clears room.
+	// Solution: We are not setting selectedHotelId in edit mode above because it was hard.
+
 	if (newId) {
-        selectedRoomId.value = '' // This clears it if user changes hotel. Good.
+		selectedRoomId.value = '' // This clears it if user changes hotel. Good.
 		loadRooms(Number(newId))
 	} else {
 		roomTypes.value = []
@@ -150,22 +203,27 @@ const nights = computed(() => {
 	return days > 0 ? days : 1
 })
 
-const selectedHotel = computed(() =>
-    selectedHotelObject.value ||
-	hotels.value.find((h) => h.hotel_id.toString() === selectedHotelId.value)
+const selectedHotel = computed(
+	() =>
+		selectedHotelObject.value ||
+		hotels.value.find((h) => h.hotel_id.toString() === selectedHotelId.value),
 )
 const selectedRoom = computed(() =>
 	roomTypes.value.find(
-		(r) => r.habitacion_id.toString() === selectedRoomId.value
-	)
+		(r) => r.habitacion_id.toString() === selectedRoomId.value,
+	),
 )
 
 // Price Lookup
 watch([selectedRoomId], async ([rId]) => {
-    // Avoid overwrite on edit load
-    if (props.itemToEdit && rId === props.itemToEdit.habitacion_id?.toString() && manualPrice.value === props.itemToEdit.precio_unitario_snapshot) {
-        return
-    }
+	// Avoid overwrite on edit load
+	if (
+		props.itemToEdit &&
+		rId === props.itemToEdit.habitacion_id?.toString() &&
+		manualPrice.value === props.itemToEdit.precio_unitario_snapshot
+	) {
+		return
+	}
 
 	if (!rId || !props.hojaId) {
 		foundPrice.value = null
@@ -177,7 +235,7 @@ watch([selectedRoomId], async ([rId]) => {
 		// Hotel prices are usually simpler: Room ID + Sheet
 		const priceRecord = await QuoteService.findRoomPrice(
 			Number(rId),
-			props.hojaId
+			props.hojaId,
 		)
 		if (priceRecord) {
 			foundPrice.value = priceRecord.precio_por_noche
@@ -211,13 +269,13 @@ const subtotal = computed(() => {
 })
 
 const onSave = async () => {
-    // If editing, selectedRoomId might be populated from props but select dropdown is empty because we didn't load hotel.
-    // That's fine as long as we have the ID.
+	// If editing, selectedRoomId might be populated from props but select dropdown is empty because we didn't load hotel.
+	// That's fine as long as we have the ID.
 	if (!selectedRoomId.value) return
 
 	isLoading.value = true
 	try {
-        const payload = {
+		const payload = {
 			habitacion_id: Number(selectedRoomId.value),
 			cantidad: nights.value, // In hotels, quantity is NIGHTS
 			numero_pax: props.pax,
@@ -228,22 +286,24 @@ const onSave = async () => {
 			es_por_pax: true,
 			descripcion_snapshot:
 				customDescription.value ||
-				(selectedHotel.value && selectedRoom.value ? `${selectedHotel.value?.nombre} - ${selectedRoom.value?.tipo} (${quantityRooms.value} hab.)` : undefined),
+				(selectedHotel.value && selectedRoom.value
+					? `${selectedHotel.value?.nombre} - ${selectedRoom.value?.tipo} (${quantityRooms.value} hab.)`
+					: undefined),
 			aplica_comision: appliesCommission.value,
 		}
 
-        if (props.itemToEdit) {
-            // Update
-             await QuoteService.updateQuoteItem(props.itemToEdit.item_id, payload)
-             toast.success('Hotel actualizado')
-        } else {
-            // Create
-            await QuoteService.addQuoteItem({
-                ...payload,
-			    cotizacion_id: props.quoteId,
-            })
-		    toast.success('Hotel agregado')
-        }
+		if (props.itemToEdit) {
+			// Update
+			await QuoteService.updateQuoteItem(props.itemToEdit.item_id, payload)
+			toast.success('Hotel actualizado')
+		} else {
+			// Create
+			await QuoteService.addQuoteItem({
+				...payload,
+				cotizacion_id: props.quoteId,
+			})
+			toast.success('Hotel agregado')
+		}
 		emit('saved')
 		emit('update:open', false)
 	} catch (error: any) {
@@ -258,28 +318,84 @@ const onSave = async () => {
 	<Dialog :open="open" @update:open="emit('update:open', $event)">
 		<DialogContent class="sm:max-w-[500px]">
 			<DialogHeader>
-				<DialogTitle>{{ itemToEdit ? 'Editar Hotel' : 'Agregar Hotel' }}</DialogTitle>
+				<DialogTitle>{{
+					itemToEdit ? 'Editar Hotel' : 'Agregar Hotel'
+				}}</DialogTitle>
 				<DialogDescription>
-					{{ itemToEdit ? 'Modifica la reserva de hotel.' : 'Selecciona hotel y tipo de habitación.' }}
+					{{
+						itemToEdit
+							? 'Modifica la reserva de hotel.'
+							: 'Selecciona hotel y tipo de habitación.'
+					}}
 				</DialogDescription>
 			</DialogHeader>
 
-			<div class="grid gap-4 py-4">
-				<div class="grid gap-2">
+			<div class="grid gap-4 py-4 min-w-0">
+				<div class="grid gap-2 min-w-0">
 					<Label>Hotel</Label>
-					<SearchableSelect
-						v-model="selectedHotelId"
-						:items="hotels"
-						label-key="nombre"
-						value-key="hotel_id"
-						placeholder="Selecciona un hotel"
-						search-placeholder="Buscar hotel..."
-						mode="async"
-						:search-fn="searchHotels"
-                        @select="(item) => selectedHotelObject = item as Tables<'hoteles'>"
-					/>
+					<div class="flex gap-2 w-full min-w-0 items-start">
+						<div class="flex-1 min-w-0">
+							<SearchableSelect
+								v-model="selectedHotelId"
+								:items="hotels"
+								label-key="nombre"
+								value-key="hotel_id"
+								placeholder="Selecciona un hotel"
+								search-placeholder="Buscar hotel..."
+								mode="async"
+								:search-fn="searchHotels"
+								@select="
+									(item) => (selectedHotelObject = item as Tables<'hoteles'>)
+								"
+							/>
+						</div>
+						<Popover>
+							<PopoverTrigger as-child>
+								<Button
+									variant="outline"
+									size="icon"
+									type="button"
+									title="Filtros de búsqueda"
+									class="shrink-0"
+								>
+									<Filter class="w-4 h-4" />
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent class="w-72" align="end">
+								<div class="space-y-4">
+									<h4 class="font-medium text-sm">Filtros de Búsqueda</h4>
+									<div class="space-y-2">
+										<Label class="text-xs">Ciudad</Label>
+										<Input
+											v-model="activeFilters.ciudad"
+											placeholder="Ej. Sucre"
+											class="h-8 text-sm"
+										/>
+									</div>
+									<p class="text-xs text-muted-foreground">
+										Los resultados se actualizarán automáticamente.
+									</p>
+								</div>
+							</PopoverContent>
+						</Popover>
+					</div>
 				</div>
-
+				<div
+					v-if="activeFilters.ciudad"
+					class="flex flex-wrap gap-2 mt-2 text-xs"
+				>
+					<template v-if="activeFilters.ciudad">
+						<Badge variant="secondary" as-child>
+							Ciudad: {{ activeFilters.ciudad }}
+							<div
+								class="cursor-pointer hover:text-destructive flex items-center"
+								@click.stop="removeFilter('ciudad')"
+							>
+								<X class="w-3 h-3" />
+							</div>
+						</Badge>
+					</template>
+				</div>
 				<div class="grid gap-2" v-if="selectedHotelId">
 					<Label>Tipo de Habitación</Label>
 					<Select v-model="selectedRoomId">
@@ -358,11 +474,14 @@ const onSave = async () => {
 					</div>
 
 					<div class="flex items-center space-x-2 pt-2">
-                        <Checkbox id="commission" v-model:modelValue="appliesCommission" />
-                        <Label for="commission" class="text-sm font-medium leading-none cursor-pointer">
-                            Aplica Comisión de Agencia
-                        </Label>
-                    </div>
+						<Checkbox id="commission" v-model:modelValue="appliesCommission" />
+						<Label
+							for="commission"
+							class="text-sm font-medium leading-none cursor-pointer"
+						>
+							Aplica Comisión de Agencia
+						</Label>
+					</div>
 
 					<Separator class="my-2" />
 
@@ -392,7 +511,13 @@ const onSave = async () => {
 					>Cancelar</Button
 				>
 				<Button @click="onSave" :disabled="isLoading || !selectedRoomId">
-					{{ isLoading ? 'Guardando...' : (itemToEdit ? 'Guardar Cambios' : 'Agregar a Cotización') }}
+					{{
+						isLoading
+							? 'Guardando...'
+							: itemToEdit
+								? 'Guardar Cambios'
+								: 'Agregar a Cotización'
+					}}
 				</Button>
 			</DialogFooter>
 		</DialogContent>

@@ -22,6 +22,13 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog'
+import { Filter, X } from 'lucide-vue-next'
+import { Badge } from '@/components/ui/badge'
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from '@/components/ui/popover'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import { toast } from 'vue-sonner'
 import type { Tables } from '@/types/database.types'
@@ -30,8 +37,8 @@ const props = defineProps<{
 	open: boolean
 	hojaId: number | null
 	quoteId: number
-    pax: number
-    itemToEdit?: QuoteItemWithDetails | null
+	pax: number
+	itemToEdit?: QuoteItemWithDetails | null
 }>()
 
 const emit = defineEmits<{
@@ -47,7 +54,44 @@ const { confirm } = useConfirm()
 
 // Form State
 const selectedServiceId = ref<string>('')
+const searchableSelectRef = ref<any>(null)
+
+// Filters State
+const activeFilters = ref({
+	ciudad: '',
+	categoria: '',
+})
+
+const removeFilter = (key: 'ciudad' | 'categoria') => {
+	activeFilters.value[key] = ''
+	searchableSelectRef.value?.triggerSearch()
+}
+
+// Trigger search when filters change (debounced implicitly by the user typing orexplicitly when removing)
+watch(
+	activeFilters,
+	async () => {
+		let finalQuery = ''
+		if (activeFilters.value.ciudad) {
+			finalQuery += ` $ciudad:${activeFilters.value.ciudad}`
+		}
+		if (activeFilters.value.categoria) {
+			finalQuery += ` $categoria:${activeFilters.value.categoria}`
+		}
+
+		if (finalQuery.trim()) {
+			const results = await InventoryService.searchServices(finalQuery)
+			services.value = results || []
+		} else {
+			await loadServices()
+		}
+		
+		searchableSelectRef.value?.triggerSearch()
+	},
+	{ deep: true },
+)
 const dateService = ref('')
+const isDateDisabled = ref(false)
 const manualPrice = ref<number | null>(null)
 const foundPrice = ref<number | null>(null)
 const customDescription = ref('')
@@ -67,69 +111,97 @@ const loadServices = async () => {
 }
 
 const searchServices = async (query: string) => {
-	return await InventoryService.searchServices(query)
+	let finalQuery = query
+	if (activeFilters.value.ciudad) {
+		finalQuery += ` $ciudad:${activeFilters.value.ciudad}`
+	}
+	if (activeFilters.value.categoria) {
+		finalQuery += ` $categoria:${activeFilters.value.categoria}`
+	}
+	return await InventoryService.searchServices(finalQuery)
 }
 
 onMounted(() => {
 	loadServices()
-    
-    // Initialize Form
-    if (props.itemToEdit) {
-        // --- EDIT MODE ---
-        console.log('Editing Item:', props.itemToEdit) // Debug
-        
-        selectedServiceId.value = props.itemToEdit.servicio_id?.toString() || ''
-        dateService.value = props.itemToEdit.fecha_servicio || ''
-        manualPrice.value = props.itemToEdit.servicio_id ? 0 : props.itemToEdit.precio_unitario_snapshot
-        customDescription.value = props.itemToEdit.descripcion_snapshot || ''
-        // Use the proper column 'aplica_comision'. Default to true.
-        appliesCommission.value = props.itemToEdit.aplica_comision ?? false
 
-        // Mock Object for UI Display (Optional but recommended for UX)
-        if (props.itemToEdit.servicios) {
-             const mockService = { 
-                servicio_id: props.itemToEdit.servicio_id!,
-                nombre: props.itemToEdit.servicios.nombre,
-            } as any
-            selectedServiceObject.value = mockService
-            
-            // Inject into list so SearchableSelect finds it immediately
-            if (!services.value.find(s => s.servicio_id === props.itemToEdit?.servicio_id)) {
-                services.value = [mockService, ...services.value]
-            }
-        }
-    } else {
-        // --- CREATE MODE ---
-        selectedServiceId.value = ''
-        selectedServiceObject.value = null
-        dateService.value = new Date().toISOString().split('T')[0] || ''
-        manualPrice.value = null
-        foundPrice.value = null
-        customDescription.value = ''
-        appliesCommission.value = false
-    }
+	// Initialize Form
+	if (props.itemToEdit) {
+		// --- EDIT MODE ---
+		console.log('Editing Item:', props.itemToEdit) // Debug
+
+		selectedServiceId.value = props.itemToEdit.servicio_id?.toString() || ''
+		dateService.value =
+			props.itemToEdit.fecha_servicio ||
+			new Date().toISOString().substring(0, 10)
+		isDateDisabled.value = !props.itemToEdit.fecha_servicio
+		manualPrice.value = props.itemToEdit.servicio_id
+			? 0
+			: props.itemToEdit.precio_unitario_snapshot
+		customDescription.value = props.itemToEdit.descripcion_snapshot || ''
+		// Use the proper column 'aplica_comision'. Default to true.
+		appliesCommission.value = props.itemToEdit.aplica_comision ?? false
+
+		// Mock Object for UI Display (Optional but recommended for UX)
+		if (props.itemToEdit.servicios) {
+			const mockService = {
+				servicio_id: props.itemToEdit.servicio_id!,
+				nombre: props.itemToEdit.servicios.nombre,
+			} as any
+			selectedServiceObject.value = mockService
+
+			// Inject into list so SearchableSelect finds it immediately
+			if (
+				!services.value.find(
+					(s) => s.servicio_id === props.itemToEdit?.servicio_id,
+				)
+			) {
+				services.value = [mockService, ...services.value]
+			}
+		}
+	} else {
+		// --- CREATE MODE ---
+		selectedServiceId.value = ''
+		selectedServiceObject.value = null
+
+		const lastDate = localStorage.getItem(
+			'last_used_service_date_' + props.quoteId,
+		)
+		if (lastDate !== null) {
+			dateService.value = lastDate
+		} else {
+			dateService.value = new Date().toISOString().substring(0, 10)
+		}
+		isDateDisabled.value = false
+
+		manualPrice.value = null
+		foundPrice.value = null
+		customDescription.value = ''
+		appliesCommission.value = false
+	}
 })
 
 // Removed watch(props.open) because v-if in parent handles lifecycle
-// watch(() => props.open, ...) 
+// watch(() => props.open, ...)
 
-const selectedService = computed(() =>
-    selectedServiceObject.value || 
-	services.value.find(
-		(s) => s.servicio_id.toString() === selectedServiceId.value
-	)
+const selectedService = computed(
+	() =>
+		selectedServiceObject.value ||
+		services.value.find(
+			(s) => s.servicio_id.toString() === selectedServiceId.value,
+		),
 )
 
 // Watch for changes to trigger price lookup
 watch([selectedServiceId, dateService], async ([sId, d]) => {
-    // If editing and values match initial, avoid re-pricing over manual override
-    if (props.itemToEdit && 
-        sId === props.itemToEdit.servicio_id?.toString() && 
-        d === props.itemToEdit.fecha_servicio &&
-        manualPrice.value === props.itemToEdit.precio_unitario_snapshot
-    ) {
-        return
-    }
+	// If editing and values match initial, avoid re-pricing over manual override
+	if (
+		props.itemToEdit &&
+		sId === props.itemToEdit.servicio_id?.toString() &&
+		d === props.itemToEdit.fecha_servicio &&
+		manualPrice.value === props.itemToEdit.precio_unitario_snapshot
+	) {
+		return
+	}
 
 	if (!sId || !props.hojaId || !d) {
 		foundPrice.value = null
@@ -142,7 +214,7 @@ watch([selectedServiceId, dateService], async ([sId, d]) => {
 			Number(sId),
 			props.hojaId,
 			props.pax, // Using Global Pax
-			d
+			d,
 		)
 		if (priceRecord) {
 			foundPrice.value = priceRecord.precio_por_persona
@@ -159,9 +231,9 @@ watch([selectedServiceId, dateService], async ([sId, d]) => {
 // Reset custom description when the user changes the selected service
 // We ignore the initial assignment where oldId is empty/undefined
 watch(selectedServiceId, (newId, oldId) => {
-    if (oldId && newId !== oldId) {
-        customDescription.value = ''
-    }
+	if (oldId && newId !== oldId) {
+		customDescription.value = ''
+	}
 })
 
 const finalPrice = computed(() => {
@@ -177,7 +249,7 @@ const subtotal = computed(() => {
 const onSave = async () => {
 	if (!selectedServiceId.value && !customDescription.value) {
 		toast.error(
-			'Debe seleccionar un servicio o ingresar una descripción manual'
+			'Debe seleccionar un servicio o ingresar una descripción manual',
 		)
 		return
 	}
@@ -185,7 +257,8 @@ const onSave = async () => {
 	if (finalPrice.value <= 0) {
 		const ok = await confirm({
 			title: 'Precio en cero',
-			description: 'El precio actual es 0. ¿Deseas continuar agregando este servicio?',
+			description:
+				'El precio actual es 0. ¿Deseas continuar agregando este servicio?',
 			confirmText: 'Continuar',
 		})
 		if (!ok) return
@@ -193,32 +266,37 @@ const onSave = async () => {
 
 	isLoading.value = true
 	try {
-        const payload = {
+		localStorage.setItem(
+			'last_used_service_date_' + props.quoteId,
+			dateService.value,
+		)
+
+		const payload = {
 			servicio_id: selectedServiceId.value
 				? Number(selectedServiceId.value)
 				: null,
-			cantidad: 1, 
+			cantidad: 1,
 			numero_pax: props.pax, // Save the pax used for calculation
-			fecha_servicio: dateService.value,
+			fecha_servicio: isDateDisabled.value ? null : dateService.value,
 			precio_unitario_snapshot: finalPrice.value,
 			es_por_pax: true, // Reset to standard behavior (per pax)
-            aplica_comision: appliesCommission.value, // Save to new column
+			aplica_comision: appliesCommission.value, // Save to new column
 			descripcion_snapshot:
 				customDescription.value ||
 				selectedService.value?.nombre ||
 				'Servicio Personalizado',
 		}
 
-        if (props.itemToEdit) {
-            await QuoteService.updateQuoteItem(props.itemToEdit.item_id, payload)
-            toast.success('Item actualizado')
-        } else {
-		    await QuoteService.addQuoteItem({
-                ...payload,
-			    cotizacion_id: props.quoteId,
-            })
-		    toast.success('Item agregado')
-        }
+		if (props.itemToEdit) {
+			await QuoteService.updateQuoteItem(props.itemToEdit.item_id, payload)
+			toast.success('Item actualizado')
+		} else {
+			await QuoteService.addQuoteItem({
+				...payload,
+				cotizacion_id: props.quoteId,
+			})
+			toast.success('Item agregado')
+		}
 		emit('saved')
 		emit('update:open', false)
 	} catch (error: any) {
@@ -233,14 +311,20 @@ const onSave = async () => {
 	<Dialog :open="open" @update:open="emit('update:open', $event)">
 		<DialogContent class="sm:max-w-[500px]">
 			<DialogHeader>
-				<DialogTitle>{{ itemToEdit ? 'Editar Servicio' : 'Agregar Servicio' }}</DialogTitle>
+				<DialogTitle>{{
+					itemToEdit ? 'Editar Servicio' : 'Agregar Servicio'
+				}}</DialogTitle>
 				<DialogDescription>
-					{{ itemToEdit ? 'Modifica los detalles del servicio.' : 'Busca un servicio y añádelo a la cotización.' }}
+					{{
+						itemToEdit
+							? 'Modifica los detalles del servicio.'
+							: 'Busca un servicio y añádelo a la cotización.'
+					}}
 				</DialogDescription>
 			</DialogHeader>
 
-			<div class="grid gap-4 py-4">
-				<div class="grid gap-2">
+			<div class="grid gap-4 py-4 min-w-0">
+				<div class="grid gap-2 min-w-0">
 					<div class="flex justify-between items-center">
 						<Label>Servicio</Label>
 						<Button
@@ -253,27 +337,117 @@ const onSave = async () => {
 							Limpiar selección (Modo Manual)
 						</Button>
 					</div>
-					<SearchableSelect
-						v-model="selectedServiceId"
-						:items="services"
-						label-key="nombre"
-						value-key="servicio_id"
-						placeholder="Selecciona un servicio (o déjalo vacío para manual)"
-						search-placeholder="Buscar servicio..."
-						mode="async"
-						:search-fn="searchServices"
-                        @select="(item) => selectedServiceObject = item as Tables<'servicios'>"
-					/>
-				</div>
-
-				<div class="grid grid-cols-1 gap-4">
-					<div class="grid gap-2">
-						<Label>Fecha del Servicio</Label>
-						<Input type="date" v-model="dateService" />
+					<div class="flex gap-2 w-full min-w-0 items-start">
+						<div class="flex-1 min-w-0">
+							<SearchableSelect
+								ref="searchableSelectRef"
+								v-model="selectedServiceId"
+								:items="services"
+								label-key="nombre"
+								value-key="servicio_id"
+								placeholder="Selecciona un servicio (o déjalo vacío para manual)"
+								search-placeholder="Buscar servicio..."
+								mode="async"
+								:search-fn="searchServices"
+								@select="
+									(item) =>
+										(selectedServiceObject = item as Tables<'servicios'>)
+								"
+							/>
+						</div>
+						<Popover>
+							<PopoverTrigger as-child>
+								<Button
+									variant="outline"
+									size="icon"
+									type="button"
+									title="Filtros de búsqueda"
+									class="shrink-0"
+								>
+									<Filter class="w-4 h-4" />
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent class="w-72" align="end">
+								<div class="space-y-4">
+									<h4 class="font-medium text-sm">Filtros de Búsqueda</h4>
+									<div class="space-y-2">
+										<Label class="text-xs">Ciudad</Label>
+										<Input
+											v-model="activeFilters.ciudad"
+											placeholder="Ej. Sucre"
+											class="h-8 text-sm"
+										/>
+									</div>
+									<div class="space-y-2">
+										<Label class="text-xs">Categoría</Label>
+										<Input
+											v-model="activeFilters.categoria"
+											placeholder="Ej. Transporte"
+											class="h-8 text-sm"
+										/>
+									</div>
+									<p class="text-xs text-muted-foreground">
+										Los resultados se actualizarán automáticamente.
+									</p>
+								</div>
+							</PopoverContent>
+						</Popover>
+					</div>
+					<div
+						v-if="activeFilters.ciudad || activeFilters.categoria"
+						class="flex flex-wrap gap-2 mt-2 text-xs"
+					>
+						<template v-if="activeFilters.ciudad">
+							<Badge variant="secondary" as-child>
+								Ciudad: {{ activeFilters.ciudad }}
+								<div
+									class="cursor-pointer hover:text-destructive flex items-center"
+									@click.stop="removeFilter('ciudad')"
+								>
+									<X class="w-3 h-3" />
+								</div>
+							</Badge>
+						</template>
+						<template v-if="activeFilters.categoria">
+							<Badge variant="secondary" as-child>
+								Categoría: {{ activeFilters.categoria }}
+								<div
+									class="cursor-pointer hover:text-destructive flex items-center"
+									@click.stop="removeFilter('categoria')"
+								>
+									<X class="w-3 h-3" />
+								</div>
+							</Badge>
+						</template>
 					</div>
 				</div>
 
-				<div class="grid gap-2">
+				<div class="grid grid-cols-1 gap-4 min-w-0">
+					<div class="grid gap-2 min-w-0">
+						<div class="flex justify-between items-center">
+							<Label>Fecha del Servicio</Label>
+							<div class="flex items-center space-x-2">
+								<Checkbox
+									id="disableDate"
+									v-model:modelValue="isDateDisabled"
+								/>
+								<Label
+									for="disableDate"
+									class="text-xs font-normal cursor-pointer text-muted-foreground"
+								>
+									Sin fecha
+								</Label>
+							</div>
+						</div>
+						<Input
+							type="date"
+							v-model="dateService"
+							:disabled="isDateDisabled"
+						/>
+					</div>
+				</div>
+
+				<div class="grid gap-2 min-w-0">
 					<Label
 						>Servicio especial
 						{{
@@ -282,6 +456,7 @@ const onSave = async () => {
 					>
 					<Input
 						v-model="customDescription"
+						class="w-full min-w-0"
 						:placeholder="
 							selectedService?.nombre ||
 							'Ej: Servicio especial fuera de catálogo...'
@@ -315,12 +490,15 @@ const onSave = async () => {
 						</NumberField>
 					</div>
 
-                    <div class="flex items-center space-x-2 pt-2">
-                        <Checkbox id="commission" v-model:modelValue="appliesCommission" />
-                        <Label for="commission" class="text-sm font-medium leading-none cursor-pointer">
-                            Aplica Comisión de Agencia
-                        </Label>
-                    </div>
+					<div class="flex items-center space-x-2 pt-2">
+						<Checkbox id="commission" v-model:modelValue="appliesCommission" />
+						<Label
+							for="commission"
+							class="text-sm font-medium leading-none cursor-pointer"
+						>
+							Aplica Comisión de Agencia
+						</Label>
+					</div>
 
 					<div class="flex justify-between items-center pt-2 border-t">
 						<span class="font-bold">Subtotal Estimado:</span>
@@ -337,7 +515,13 @@ const onSave = async () => {
 					@click="onSave"
 					:disabled="isLoading || (!selectedServiceId && !customDescription)"
 				>
-					{{ isLoading ? 'Guardando...' : (itemToEdit ? 'Guardar Cambios' : 'Agregar a Cotización') }}
+					{{
+						isLoading
+							? 'Guardando...'
+							: itemToEdit
+								? 'Guardar Cambios'
+								: 'Agregar a Cotización'
+					}}
 				</Button>
 			</DialogFooter>
 		</DialogContent>
