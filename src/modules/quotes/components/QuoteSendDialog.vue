@@ -13,10 +13,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'vue-sonner'
-import { Mail, Check, Clipboard } from 'lucide-vue-next'
+import { Mail, Check, Clipboard, FileText, Sparkles } from 'lucide-vue-next'
 import type { QuoteWithClient, QuoteItemWithDetails } from '../QuoteService'
-import { QuoteMessageGenerator } from '../services/QuoteMessageGenerator'
+import { QuoteMessageGenerator, type EmailTemplateStyle } from '../services/QuoteMessageGenerator'
 import type { Tables } from '@/types/database.types'
 
 const props = defineProps<{
@@ -24,14 +25,17 @@ const props = defineProps<{
   quote: QuoteWithClient
   items: QuoteItemWithDetails[]
   bankAccount: Tables<'cuentas_bancarias'> | null
+  agencyConfig: Tables<'configuracion_sistema'> | null
+  logoUrl: string | null
 }>()
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
 }>()
 
-const generator = computed(() => new QuoteMessageGenerator(props.quote, props.items, props.bankAccount))
-const htmlContent = computed(() => generator.value.generateHtml(introMessage.value))
+const generator = computed(() => new QuoteMessageGenerator(props.quote, props.items, props.bankAccount, props.agencyConfig, props.logoUrl))
+const templateStyle = ref<EmailTemplateStyle>('modern')
+const htmlContent = computed(() => generator.value.generate(templateStyle.value, introMessage.value))
 
 // Email Form State
 const recipientEmail = ref(props.quote.clientes?.email || '')
@@ -133,7 +137,27 @@ watch(() => props.quote, (newQuote) => {
           </div>
           <div class="space-y-2">
             <Label for="message">Mensaje Introductorio:</Label>
-            <Textarea id="message" v-model="introMessage" class="min-h-[200px]" />
+            <Textarea id="message" v-model="introMessage" class="min-h-[150px]" />
+          </div>
+
+          <!-- Template Style Selector -->
+          <div class="space-y-2 pt-2 border-t border-border/50">
+            <Label>Estilo de Plantilla:</Label>
+            <Tabs :default-value="templateStyle" @update:model-value="(v: any) => templateStyle = v as EmailTemplateStyle">
+              <TabsList class="grid w-full grid-cols-2">
+                <TabsTrigger value="modern" class="text-xs gap-1.5">
+                  <Sparkles class="w-3.5 h-3.5" />
+                  Moderna
+                </TabsTrigger>
+                <TabsTrigger value="classic" class="text-xs gap-1.5">
+                  <FileText class="w-3.5 h-3.5" />
+                  Clásica (PDF)
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <p class="text-[11px] text-muted-foreground leading-tight">
+              {{ templateStyle === 'modern' ? 'Diseño limpio y moderno con header de color.' : 'Formato similar al PDF: tabla detallada con códigos, precios unitarios y resumen financiero completo.' }}
+            </p>
           </div>
         </div>
 
@@ -141,7 +165,7 @@ watch(() => props.quote, (newQuote) => {
         <div class="lg:col-span-3 flex flex-col ">
            <div class="bg-muted px-4 py-2 text-[10px] uppercase font-bold text-muted-foreground border-b flex justify-between items-center shrink-0">
               <span>Vista Previa del Mensaje</span>
-              <span class="text-primary italic">Formato enriquecido activado</span>
+              <span class="text-primary italic">{{ templateStyle === 'modern' ? 'Plantilla Moderna' : 'Plantilla Clásica (PDF)' }}</span>
            </div>
            
            <ScrollArea class="grow bg-white h-72 rounded-md border">

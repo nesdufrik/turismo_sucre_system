@@ -48,6 +48,8 @@ const showSendDialog = ref(false)
 const quoteContext = ref<{
 	items: QuoteItemWithDetails[]
 	bankAccount: Tables<'cuentas_bancarias'> | null
+	agencyConfig: Tables<'configuracion_sistema'> | null
+	logoUrl: string | null
 } | null>(null)
 
 const handleGeneratePdf = async () => {
@@ -101,9 +103,18 @@ const handleOpenSendDialog = async () => {
 		const context = await QuoteService.getFullQuoteContext(
 			props.quote.cotizacion_id,
 		)
+
+		// Fetch and convert logo to base64/URL if available
+		let logoUrl: string | null = null
+		if (context.config?.empresa_logo_url) {
+			logoUrl = context.config.empresa_logo_url
+		}
+
 		quoteContext.value = {
 			items: context.items,
 			bankAccount: context.bankAccount,
+			agencyConfig: context.config,
+			logoUrl,
 		}
 		showSendDialog.value = true
 	} catch (error: any) {
@@ -241,6 +252,8 @@ const handleStatusChange = async (
 			:quote="quote as any"
 			:items="quoteContext.items"
 			:bank-account="quoteContext.bankAccount"
+			:agency-config="quoteContext.agencyConfig"
+			:logo-url="quoteContext.logoUrl"
 		/>
 
 		<ConfirmDialog
