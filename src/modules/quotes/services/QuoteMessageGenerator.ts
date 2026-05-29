@@ -71,7 +71,6 @@ export class QuoteMessageGenerator {
           <div style="font-weight: bold; color: #2d3748;">${item.descripcion_snapshot || item.servicios?.nombre || 'Servicio'}</div>
           <div style="font-size: 12px; color: #718096;">${item.servicios?.codigo || ''}</div>
         </td>
-        <td style="padding: 12px 8px; border-bottom: 1px solid #edf2f7; font-size: 14px; text-align: center;">${item.cantidad}</td>
         <td style="padding: 12px 8px; border-bottom: 1px solid #edf2f7; font-size: 14px; text-align: right; color: #4a5568;">
           ${this.formatCurrency(PriceCalculator.calculateItemTotal(item, pax), currency)}
         </td>
@@ -100,7 +99,6 @@ export class QuoteMessageGenerator {
               <tr style="background-color: #f7fafc;">
                 <th style="padding: 12px 8px; text-align: left; border-bottom: 2px solid #e2e8f0; font-size: 13px; color: #4a5568; text-transform: uppercase;">Fecha</th>
                 <th style="padding: 12px 8px; text-align: left; border-bottom: 2px solid #e2e8f0; font-size: 13px; color: #4a5568; text-transform: uppercase;">Descripción</th>
-                <th style="padding: 12px 8px; text-align: center; border-bottom: 2px solid #e2e8f0; font-size: 13px; color: #4a5568; text-transform: uppercase;">Cant.</th>
                 <th style="padding: 12px 8px; text-align: right; border-bottom: 2px solid #e2e8f0; font-size: 13px; color: #4a5568; text-transform: uppercase;">Total</th>
               </tr>
             </thead>
@@ -199,7 +197,6 @@ export class QuoteMessageGenerator {
           <td style="padding:8px 10px; border-bottom:1px solid #ddd; font-size:12px; color:#444;">${this.formatDate(item.fecha_servicio)}</td>
           <td style="padding:8px 10px; border-bottom:1px solid #ddd; font-size:12px; color:#2c3e50;">${desc}</td>
           <td style="padding:8px 10px; border-bottom:1px solid #ddd; font-size:12px; text-align:center; color:#444;">${code}</td>
-          <td style="padding:8px 10px; border-bottom:1px solid #ddd; font-size:12px; text-align:center; color:#444;">${item.cantidad}</td>
           <td style="padding:8px 10px; border-bottom:1px solid #ddd; font-size:12px; text-align:right; color:#444;">${this.formatCurrency(price, currency)}</td>
           <td style="padding:8px 10px; border-bottom:1px solid #ddd; font-size:12px; text-align:right; color:#2c3e50;">${this.formatCurrency(rowTotal, currency)}</td>
         </tr>`
@@ -303,7 +300,6 @@ export class QuoteMessageGenerator {
               <th style="padding: 8px 10px; color: white; font-size: 11px; text-align: left; font-weight: 600;">Fecha</th>
               <th style="padding: 8px 10px; color: white; font-size: 11px; text-align: left; font-weight: 600;">Descripción</th>
               <th style="padding: 8px 10px; color: white; font-size: 11px; text-align: center; font-weight: 600;">Código</th>
-              <th style="padding: 8px 10px; color: white; font-size: 11px; text-align: center; font-weight: 600;">Cant.</th>
               <th style="padding: 8px 10px; color: white; font-size: 11px; text-align: right; font-weight: 600;">Precio Unit.</th>
               <th style="padding: 8px 10px; color: white; font-size: 11px; text-align: right; font-weight: 600;">Subtotal</th>
             </tr>

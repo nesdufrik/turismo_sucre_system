@@ -283,7 +283,7 @@ export class QuotePdfGenerator {
 	private drawItineraryTable() {
 		// Determine headers and data
 		const headers = [
-			['Fecha', 'Descripción', 'Código', 'Cant.', 'Precio Unit.', 'Subtotal'],
+			['Fecha', 'Descripción', 'Código', 'Precio Unit.', 'Subtotal'],
 		]
 		const pax = this.quote.cantidad_pax || 1
 
@@ -316,7 +316,6 @@ export class QuotePdfGenerator {
 				this.formatDate(item.fecha_servicio),
 				desc,
 				item.servicios?.codigo || '-',
-				item.cantidad || 1,
 				this.formatCurrency(price, this.quote.moneda || 'USD'),
 				this.formatCurrency(rowTotal, this.quote.moneda || 'USD'),
 			]
@@ -341,9 +340,8 @@ export class QuotePdfGenerator {
 				0: { cellWidth: 25 }, // Fecha
 				1: { cellWidth: 'auto' }, // Descripcion
 				2: { cellWidth: 20 }, // Código
-				3: { cellWidth: 15, halign: 'center' }, // Cant
-				4: { cellWidth: 28, halign: 'right' }, // Unit
-				5: { cellWidth: 28, halign: 'right' }, // Total
+				3: { cellWidth: 28, halign: 'right' }, // Precio Unit.
+				4: { cellWidth: 28, halign: 'right' }, // Subtotal
 			},
 			alternateRowStyles: {
 				fillColor: this.colors.lightGrey as any,
