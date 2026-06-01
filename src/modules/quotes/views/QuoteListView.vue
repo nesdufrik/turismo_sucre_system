@@ -8,6 +8,7 @@ import {
 import { useRouter } from 'vue-router'
 import { useConfirm } from '@/composables/useConfirm'
 import { useAuthStore } from '@/stores/auth'
+import { usePermission } from '@/composables/usePermission'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -63,7 +64,17 @@ import { onUnmounted } from 'vue'
 const router = useRouter()
 const { confirm } = useConfirm()
 const authStore = useAuthStore()
+const { can } = usePermission()
 const quotes = ref<QuoteWithClient[]>([])
+
+const navigateToQuote = (id: number) => {
+	if (can('quotes.view') || can('quotes.edit')) {
+		router.push({
+			name: 'QuoteEdit',
+			params: { id },
+		})
+	}
+}
 const loading = ref(true)
 const showReportDialog = ref(false)
 
@@ -250,6 +261,8 @@ onUnmounted(() => {
 						v-for="quote in quotes"
 						:key="quote.cotizacion_id"
 						class="group"
+						:class="{ 'cursor-pointer': can('quotes.view') || can('quotes.edit') }"
+						@click="navigateToQuote(quote.cotizacion_id)"
 					>
 						<TableCell class="font-mono text-xs font-bold"
 							>#{{ quote.cotizacion_id }}</TableCell
@@ -305,7 +318,7 @@ onUnmounted(() => {
 						<TableCell>
 							<QuoteStatusBadge :status="quote.estado" />
 						</TableCell>
-						<TableCell class="text-right">
+						<TableCell class="text-right" @click.stop>
 							<DropdownMenu>
 								<DropdownMenuTrigger as-child>
 									<Button variant="ghost" size="icon">
