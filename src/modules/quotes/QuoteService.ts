@@ -130,9 +130,13 @@ export const QuoteService = {
 	},
 
 	async createQuote(quote: QuoteInsert) {
+		const payload = { ...quote }
+		if (!payload.codigo_referencia) {
+			delete payload.codigo_referencia
+		}
 		const { data, error } = await supabase
 			.from('cotizaciones')
-			.insert(quote)
+			.insert(payload)
 			.select()
 			.single()
 
@@ -141,9 +145,13 @@ export const QuoteService = {
 	},
 
 	async updateQuote(id: number, quote: QuoteUpdate) {
+		const payload = { ...quote }
+		if (!payload.codigo_referencia) {
+			delete payload.codigo_referencia
+		}
 		const { data, error } = await supabase
 			.from('cotizaciones')
-			.update(quote)
+			.update(payload)
 			.eq('cotizacion_id', id)
 			.select()
 			.single()
