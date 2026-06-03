@@ -277,7 +277,9 @@ export type Database = {
         Row: {
           aprobado_por: string | null
           cantidad_pax: number | null
+          cantidad_pax_ninos: number
           cliente_id: number | null
+          codigo_referencia: string
           cotizacion_id: number
           creado_por: string | null
           estado: string | null
@@ -294,13 +296,16 @@ export type Database = {
           notas_para_cliente: string | null
           porcentaje_comision: number | null
           porcentaje_impuesto: number | null
+          porcentaje_pago_ninos: number
           tipo_cambio: number | null
           total_general: number | null
         }
         Insert: {
           aprobado_por?: string | null
           cantidad_pax?: number | null
+          cantidad_pax_ninos?: number
           cliente_id?: number | null
+          codigo_referencia?: string
           cotizacion_id?: never
           creado_por?: string | null
           estado?: string | null
@@ -317,13 +322,16 @@ export type Database = {
           notas_para_cliente?: string | null
           porcentaje_comision?: number | null
           porcentaje_impuesto?: number | null
+          porcentaje_pago_ninos?: number
           tipo_cambio?: number | null
           total_general?: number | null
         }
         Update: {
           aprobado_por?: string | null
           cantidad_pax?: number | null
+          cantidad_pax_ninos?: number
           cliente_id?: number | null
+          codigo_referencia?: string
           cotizacion_id?: never
           creado_por?: string | null
           estado?: string | null
@@ -340,6 +348,7 @@ export type Database = {
           notas_para_cliente?: string | null
           porcentaje_comision?: number | null
           porcentaje_impuesto?: number | null
+          porcentaje_pago_ninos?: number
           tipo_cambio?: number | null
           total_general?: number | null
         }
@@ -954,12 +963,14 @@ export type Database = {
       v_cotizaciones_detalles: {
         Row: {
           cantidad_pax: number | null
+          cantidad_pax_ninos: number | null
           cliente_documento: string | null
           cliente_email: string | null
           cliente_empresa: string | null
           cliente_id: number | null
           cliente_nombre: string | null
           cliente_telefono: string | null
+          codigo_referencia: string | null
           cotizacion_id: number | null
           creado_por: string | null
           estado: string | null
@@ -971,6 +982,7 @@ export type Database = {
           nombre_grupo: string | null
           porcentaje_comision: number | null
           porcentaje_impuesto: number | null
+          porcentaje_pago_ninos: number | null
           tipo_cambio: number | null
           total_general: number | null
         }

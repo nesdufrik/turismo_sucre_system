@@ -148,7 +148,7 @@ const deleteQuote = async (quote: QuoteWithClient) => {
 
 	const ok = await confirm({
 		title: '¿Eliminar Cotización?',
-		description: `Estás a punto de eliminar la cotización #${quote.cotizacion_id}. Esta acción no se puede deshacer.`,
+		description: `Estás a punto de eliminar la cotización ${quote.codigo_referencia || `#${quote.cotizacion_id}`}. Esta acción no se puede deshacer.`,
 		confirmText: 'Eliminar',
 		variant: 'destructive',
 	})
@@ -193,7 +193,7 @@ onUnmounted(() => {
 					/>
 					<Input
 						v-model="searchQuery"
-						placeholder="Buscar por grupo o ID..."
+						placeholder="Buscar por grupo, ID o código..."
 						class="pl-8"
 					/>
 				</div>
@@ -230,9 +230,10 @@ onUnmounted(() => {
 				<TableHeader class="bg-muted/50">
 					<TableRow>
 						<TableHead class="w-20">ID</TableHead>
+						<TableHead class="w-32">Referencia</TableHead>
 						<TableHead>Cliente / Grupo</TableHead>
 						<TableHead>Pax</TableHead>
-						<TableHead>Validez</TableHead>
+						<TableHead>Creado</TableHead>
 						<TableHead>Total</TableHead>
 						<TableHead>Estado</TableHead>
 						<TableHead class="text-right">Acciones</TableHead>
@@ -240,7 +241,7 @@ onUnmounted(() => {
 				</TableHeader>
 				<TableBody>
 					<TableRow v-if="loading">
-						<TableCell colspan="7" class="text-center py-12">
+						<TableCell colspan="8" class="text-center py-12">
 							<div class="flex flex-col items-center gap-2">
 								<Loader2 class="h-8 w-8 animate-spin text-primary" />
 								<span class="text-sm text-muted-foreground"
@@ -251,7 +252,7 @@ onUnmounted(() => {
 					</TableRow>
 					<TableRow v-else-if="quotes.length === 0">
 						<TableCell
-							colspan="7"
+							colspan="8"
 							class="text-center py-12 text-muted-foreground"
 						>
 							No se encontraron cotizaciones.
@@ -264,8 +265,11 @@ onUnmounted(() => {
 						:class="{ 'cursor-pointer': can('quotes.view') || can('quotes.edit') }"
 						@click="navigateToQuote(quote.cotizacion_id)"
 					>
-						<TableCell class="font-mono text-xs font-bold"
-							>#{{ quote.cotizacion_id }}</TableCell
+						<TableCell class="font-mono text-xs font-semibold text-muted-foreground">
+							#{{ quote.cotizacion_id }}
+						</TableCell>
+						<TableCell class="font-mono text-xs font-bold text-primary"
+							>{{ quote.codigo_referencia }}</TableCell
 						>
 						<TableCell>
 							<div class="flex flex-col">
@@ -281,19 +285,29 @@ onUnmounted(() => {
 							</div>
 						</TableCell>
 						<TableCell>
-							<div class="flex items-center gap-1.5">
-								<Users2 class="w-3.5 h-3.5 text-muted-foreground" />
-								<span class="text-sm">{{ quote.cantidad_pax }}</span>
+							<div class="flex items-center gap-2">
+								<div class="flex items-center gap-1">
+									<Users2 class="w-3.5 h-3.5 text-muted-foreground" />
+									<span class="text-sm font-medium">{{ quote.cantidad_pax }}</span>
+									<span class="text-xs text-muted-foreground">ad.</span>
+								</div>
+								<div
+									v-if="quote.cantidad_pax_ninos > 0"
+									class="flex items-center gap-1 text-xs text-muted-foreground border-l pl-2"
+								>
+									<span>{{ quote.cantidad_pax_ninos }}</span>
+									<span>niñ.</span>
+								</div>
 							</div>
 						</TableCell>
 						<TableCell>
 							<div
-								v-if="quote.fecha_validez_hasta"
-								class="flex items-center gap-2 text-sm text-muted-foreground"
+								v-if="quote.fecha_creacion"
+								class="flex items-center gap-2 text-xs text-muted-foreground"
 							>
 								<Calendar class="w-3 h-3" />
 								{{
-									format(new Date(quote.fecha_validez_hasta), 'dd MMM', {
+									format(new Date(quote.fecha_creacion), 'dd/MM/yyyy HH:mm', {
 										locale: es,
 									})
 								}}

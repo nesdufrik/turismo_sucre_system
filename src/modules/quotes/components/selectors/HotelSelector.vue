@@ -45,8 +45,16 @@ const props = defineProps<{
 	hojaId: number | null
 	quoteId: number
 	pax: number
+	cantidadPaxAdultos?: number
+	cantidadPaxNinos?: number
 	itemToEdit?: QuoteItemWithDetails | null
 }>()
+
+const totalPaxFisico = computed(() => {
+	const adults = Number(props.cantidadPaxAdultos) || 1
+	const kids = Number(props.cantidadPaxNinos) || 0
+	return adults + kids
+})
 
 const emit = defineEmits<{
 	(e: 'update:open', value: boolean): void
@@ -278,7 +286,7 @@ const onSave = async () => {
 		const payload = {
 			habitacion_id: Number(selectedRoomId.value),
 			cantidad: nights.value, // In hotels, quantity is NIGHTS
-			numero_pax: props.pax,
+			numero_pax: totalPaxFisico.value,
 			fecha_servicio_inicio: dateCheckIn.value,
 			fecha_servicio_fin: dateCheckOut.value,
 			fecha_servicio: dateCheckIn.value,
@@ -487,7 +495,7 @@ const onSave = async () => {
 
 					<div class="flex justify-between items-center">
 						<span class="text-sm font-bold text-primary"
-							>Prorrateo por Pax ({{ pax }} pax):</span
+							>Prorrateo por Pax ({{ totalPaxFisico }} físicos / {{ pax }} efectivos):</span
 						>
 						<span class="text-sm font-bold text-primary"
 							>{{ unitPricePerPax.toFixed(2) }} USD / pax</span
@@ -496,7 +504,7 @@ const onSave = async () => {
 
 					<div class="text-[10px] text-muted-foreground text-right italic">
 						Cálculo: ({{ finalPrice }} USD x {{ quantityRooms }} hab.) /
-						{{ pax }} pax = {{ unitPricePerPax.toFixed(2) }} USD
+						{{ pax }} pax ef. = {{ unitPricePerPax.toFixed(2) }} USD
 					</div>
 
 					<div class="flex justify-between items-center pt-2 border-t">

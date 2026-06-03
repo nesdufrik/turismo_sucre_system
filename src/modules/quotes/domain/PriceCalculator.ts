@@ -1,5 +1,7 @@
 export interface QuoteFinancialSettings {
   pax: number
+  paxNinos?: number
+  porcentajePagoNinos?: number
   taxPercent: number
   commPercent: number
   exchangeRate?: number
@@ -50,10 +52,12 @@ export const PriceCalculator = {
    * 5. Total Final (Total Bruto - Commission Amount)
    */
   calculateSummary(items: QuoteCalculatableItem[], settings: QuoteFinancialSettings): QuoteFinancialSummary {
-    const { pax, taxPercent, commPercent, exchangeRate } = settings
+    const { pax, paxNinos = 0, porcentajePagoNinos = 50, taxPercent, commPercent, exchangeRate } = settings
+
+    const effectivePax = pax + (paxNinos * (porcentajePagoNinos / 100))
 
     const subtotalNeto = items.reduce((sum, item) => {
-      return sum + this.calculateItemTotal(item, pax)
+      return sum + this.calculateItemTotal(item, effectivePax)
     }, 0)
 
     const taxAmount = subtotalNeto * (taxPercent / 100)
@@ -65,7 +69,7 @@ export const PriceCalculator = {
         const appliesComm = item.aplica_comision ?? true
         if (!appliesComm) return sum
 
-        const itemTotal = this.calculateItemTotal(item, pax)
+        const itemTotal = this.calculateItemTotal(item, effectivePax)
         // Add Tax portion to base (since Commission was on Bruto)
         // const itemBruto = itemTotal * (1 + (taxPercent / 100))
         return sum + itemTotal

@@ -38,8 +38,16 @@ const props = defineProps<{
 	hojaId: number | null
 	quoteId: number
 	pax: number
+	cantidadPaxAdultos?: number
+	cantidadPaxNinos?: number
 	itemToEdit?: QuoteItemWithDetails | null
 }>()
+
+const totalPaxFisico = computed(() => {
+	const adults = Number(props.cantidadPaxAdultos) || 1
+	const kids = Number(props.cantidadPaxNinos) || 0
+	return adults + kids
+})
 
 const emit = defineEmits<{
 	(e: 'update:open', value: boolean): void
@@ -127,8 +135,6 @@ onMounted(() => {
 	// Initialize Form
 	if (props.itemToEdit) {
 		// --- EDIT MODE ---
-		console.log('Editing Item:', props.itemToEdit) // Debug
-
 		selectedServiceId.value = props.itemToEdit.servicio_id?.toString() || ''
 		dateService.value =
 			props.itemToEdit.fecha_servicio ||
@@ -213,7 +219,7 @@ watch([selectedServiceId, dateService], async ([sId, d]) => {
 		const priceRecord = await QuoteService.findServicePrice(
 			Number(sId),
 			props.hojaId,
-			props.pax, // Using Global Pax
+			totalPaxFisico.value, // Using Total Physical Pax for bracket lookup
 			d,
 		)
 		if (priceRecord) {
@@ -276,7 +282,7 @@ const onSave = async () => {
 				? Number(selectedServiceId.value)
 				: null,
 			cantidad: 1,
-			numero_pax: props.pax, // Save the pax used for calculation
+			numero_pax: totalPaxFisico.value, // Save the pax used for calculation
 			fecha_servicio: isDateDisabled.value ? null : dateService.value,
 			precio_unitario_snapshot: finalPrice.value,
 			es_por_pax: true, // Reset to standard behavior (per pax)

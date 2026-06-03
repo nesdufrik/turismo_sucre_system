@@ -39,7 +39,7 @@ const htmlContent = computed(() => generator.value.generate(templateStyle.value,
 
 // Email Form State
 const recipientEmail = ref(props.quote.clientes?.email || '')
-const subject = ref(`Cotización #${props.quote.cotizacion_id} - ${props.quote.nombre_grupo || 'Turismo Sucre'}`)
+const subject = ref(`Cotización ${props.quote.codigo_referencia || `#${props.quote.cotizacion_id}`} - ${props.quote.nombre_grupo || 'Turismo Sucre'}`)
 const introMessage = ref(`Estimado ${props.quote.clientes?.nombre_completo || 'cliente'},\n\nAdjunto le envío el detalle de los servicios cotizados para su revisión. Quedo atento a cualquier consulta.`)
 
 const isCopied = ref(false)
@@ -107,7 +107,7 @@ const handleSendEmail = async () => {
 
 watch(() => props.quote, (newQuote) => {
   recipientEmail.value = newQuote.clientes?.email || ''
-  subject.value = `Cotización #${newQuote.cotizacion_id} - ${newQuote.nombre_grupo || 'Turismo Sucre'}`
+  subject.value = `Cotización ${newQuote.codigo_referencia || `#${newQuote.cotizacion_id}`} - ${newQuote.nombre_grupo || 'Turismo Sucre'}`
 }, { immediate: true })
 
 </script>

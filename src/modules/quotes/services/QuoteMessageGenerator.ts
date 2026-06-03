@@ -53,10 +53,15 @@ export class QuoteMessageGenerator {
 	}
 
 	public generateHtml(introMessage: string = ''): string {
-		const pax = this.quote.cantidad_pax || 1
+		const paxAdultos = this.quote.cantidad_pax || 1
+		const paxNinos = this.quote.cantidad_pax_ninos || 0
+		const pctNinos = this.quote.porcentaje_pago_ninos ?? 50
+		const paxEfectivo = paxAdultos + (paxNinos * (pctNinos / 100))
 		const currency = this.quote.moneda || 'USD'
 		const summary = PriceCalculator.calculateSummary(this.items, {
-			pax,
+			pax: paxAdultos,
+			paxNinos,
+			porcentajePagoNinos: pctNinos,
 			taxPercent: this.quote.porcentaje_impuesto || 0,
 			commPercent: this.quote.porcentaje_comision || 0,
 			exchangeRate: this.quote.tipo_cambio || 0,
@@ -72,7 +77,7 @@ export class QuoteMessageGenerator {
           <div style="font-size: 12px; color: #718096;">${item.servicios?.codigo || ''}</div>
         </td>
         <td style="padding: 12px 8px; border-bottom: 1px solid #edf2f7; font-size: 14px; text-align: right; color: #4a5568;">
-          ${this.formatCurrency(PriceCalculator.calculateItemTotal(item, pax), currency)}
+          ${this.formatCurrency(PriceCalculator.calculateItemTotal(item, paxEfectivo), currency)}
         </td>
       </tr>
     `,
@@ -84,7 +89,7 @@ export class QuoteMessageGenerator {
         <!-- Header -->
         <div style="background-color: #1e40af; padding: 30px 20px; text-align: center; color: white;">
           <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px;">Cotización de Viaje</h1>
-          <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">Referencia: #${this.quote.cotizacion_id} | ${this.quote.nombre_grupo || 'Individual'}</p>
+          <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">Referencia: ${this.quote.codigo_referencia || `#${this.quote.cotizacion_id}`} | ${this.quote.nombre_grupo || 'Individual'}</p>
         </div>
 
         <div style="padding: 30px 25px;">
@@ -169,10 +174,15 @@ export class QuoteMessageGenerator {
 	}
 
 	public generateClassicHtml(introMessage: string = ''): string {
-		const pax = this.quote.cantidad_pax || 1
+		const paxAdultos = this.quote.cantidad_pax || 1
+		const paxNinos = this.quote.cantidad_pax_ninos || 0
+		const pctNinos = this.quote.porcentaje_pago_ninos ?? 50
+		const paxEfectivo = paxAdultos + (paxNinos * (pctNinos / 100))
 		const currency = this.quote.moneda || 'USD'
 		const summary = PriceCalculator.calculateSummary(this.items, {
-			pax,
+			pax: paxAdultos,
+			paxNinos,
+			porcentajePagoNinos: pctNinos,
 			taxPercent: this.quote.porcentaje_impuesto || 0,
 			commPercent: this.quote.porcentaje_comision || 0,
 			exchangeRate: this.quote.tipo_cambio || 0,
@@ -190,7 +200,7 @@ export class QuoteMessageGenerator {
 				if (item.servicios?.nombre) desc = item.servicios.nombre
 				const code = item.servicios?.codigo || '-'
 				const price = item.precio_unitario_snapshot || 0
-				const rowTotal = PriceCalculator.calculateItemTotal(item, pax)
+				const rowTotal = PriceCalculator.calculateItemTotal(item, paxEfectivo)
 
 				return `
         <tr>
@@ -265,7 +275,7 @@ export class QuoteMessageGenerator {
             </td>
             <td style="width: 25%; text-align: right; vertical-align: middle; padding: 5px;">
               <div style="font-size: 11px; color: #555;">Ref:</div>
-              <div style="font-size: 16px; font-weight: bold; color: #2c3e50;">Nº ${this.quote.cotizacion_id}</div>
+              <div style="font-size: 16px; font-weight: bold; color: #2c3e50;">${this.quote.codigo_referencia || `Nº ${this.quote.cotizacion_id}`}</div>
               <div style="font-size: 10px; color: #888; margin-top: 4px;">Fecha: ${this.formatDate(this.quote.fecha_creacion)}</div>
             </td>
           </tr>
@@ -281,7 +291,7 @@ export class QuoteMessageGenerator {
             </tr>
             <tr>
               <td style="padding: 2px 0;"><strong>Email:</strong> ${this.quote.clientes?.email || '-'}</td>
-              <td style="padding: 2px 0;"><strong>Pasajeros:</strong> ${pax}</td>
+              <td style="padding: 2px 0;"><strong>Pasajeros:</strong> ${paxAdultos}${paxNinos > 0 ? ` Ad. + ${paxNinos} Niñ. (${pctNinos}%)` : ''}</td>
             </tr>
             <tr>
               <td style="padding: 2px 0;"></td>

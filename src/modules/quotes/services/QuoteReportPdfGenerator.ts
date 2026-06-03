@@ -4,6 +4,7 @@ import type { Tables } from '@/types/database.types'
 
 export interface QuoteReportData {
 	cotizacion_id: number
+	codigo_referencia?: string | null
 	estado: string | null
 	moneda: string | null
 	total_general: number | null
@@ -206,7 +207,7 @@ export class QuoteReportPdfGenerator {
 	}
 
 	private drawTable(startY: number) {
-		const headers = [['Fecha', 'ID', 'Cliente', 'Estado', 'Subtotal', 'Mon.']]
+		const headers = [['Fecha', 'Referencia', 'Cliente', 'Estado', 'Subtotal', 'Mon.']]
 
 		const body = this.data.map((item) => {
 			const dateStr = item.fecha_creacion
@@ -231,7 +232,7 @@ export class QuoteReportPdfGenerator {
 
 			return [
 				dateStr,
-				`#${item.cotizacion_id}`,
+				item.codigo_referencia || `#${item.cotizacion_id}`,
 				clientName,
 				st,
 				val,
@@ -252,7 +253,7 @@ export class QuoteReportPdfGenerator {
 			styles: { fontSize: 8 },
 			columnStyles: {
 				0: { cellWidth: 20 },
-				1: { cellWidth: 15 },
+				1: { cellWidth: 25 },
 				2: { cellWidth: 'auto' },
 				3: { cellWidth: 25 },
 				4: { cellWidth: 20, halign: 'right' },

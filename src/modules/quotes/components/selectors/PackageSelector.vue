@@ -30,8 +30,16 @@ const props = defineProps<{
   quoteId: number
   hojaId: number | null
   pax: number
+  cantidadPaxAdultos?: number
+  cantidadPaxNinos?: number
   itemToEdit?: QuoteItemWithDetails | null
 }>()
+
+const totalPaxFisico = computed(() => {
+  const adults = Number(props.cantidadPaxAdultos) || 1
+  const kids = Number(props.cantidadPaxNinos) || 0
+  return adults + kids
+})
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
@@ -140,7 +148,7 @@ const calculatePrice = async () => {
       const priceData = await QuoteService.findServicePrice(
         component.servicio_id, 
         props.hojaId, 
-        props.pax, 
+        totalPaxFisico.value, // Using Total Physical Pax for bracket lookup
         dateService.value
       )
 
@@ -192,7 +200,7 @@ const onSave = async () => {
     const payload = {
       paquete_id: Number(selectedPackageId.value),
       cantidad: 1,
-      numero_pax: props.pax,
+      numero_pax: totalPaxFisico.value,
       fecha_servicio: dateService.value,
       precio_unitario_snapshot: manualPrice.value || 0,
       subtotal_item: subtotal.value,

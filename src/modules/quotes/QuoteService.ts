@@ -75,10 +75,10 @@ export const QuoteService = {
         if (s) {
             const isNum = !isNaN(Number(s))
             if (isNum) {
-                // Prioridad ID exacto o coincidencia en grupo/cliente
-                queryBuilder = queryBuilder.or(`cotizacion_id.eq.${s},nombre_grupo.ilike.%${s}%,cliente_nombre.ilike.%${s}%`)
+                // Prioridad ID exacto o coincidencia en grupo/cliente/código
+                queryBuilder = queryBuilder.or(`cotizacion_id.eq.${s},codigo_referencia.ilike.%${s}%,nombre_grupo.ilike.%${s}%,cliente_nombre.ilike.%${s}%`)
             } else {
-                queryBuilder = queryBuilder.or(`nombre_grupo.ilike.%${s}%,cliente_nombre.ilike.%${s}%,cliente_email.ilike.%${s}%`)
+                queryBuilder = queryBuilder.or(`codigo_referencia.ilike.%${s}%,nombre_grupo.ilike.%${s}%,cliente_nombre.ilike.%${s}%,cliente_email.ilike.%${s}%`)
             }
         }
 
@@ -238,13 +238,15 @@ export const QuoteService = {
 	async recalculateQuoteTotal(quoteId: number) {
 		const { data: quote, error: quoteError } = await supabase
 			.from('cotizaciones')
-			.select('cantidad_pax, porcentaje_impuesto, porcentaje_comision')
+			.select('cantidad_pax, cantidad_pax_ninos, porcentaje_pago_ninos, porcentaje_impuesto, porcentaje_comision')
 			.eq('cotizacion_id', quoteId)
 			.single()
 
 		if (quoteError) throw quoteError
 
 		const pax = quote.cantidad_pax || 1
+		const paxNinos = quote.cantidad_pax_ninos || 0
+		const porcentajePagoNinos = Number(quote.porcentaje_pago_ninos) ?? 50.0
 		const taxPercent = quote.porcentaje_impuesto || 0
 		const commPercent = quote.porcentaje_comision || 0
 
@@ -257,6 +259,8 @@ export const QuoteService = {
 
 		const summary = PriceCalculator.calculateSummary(items || [], {
 			pax,
+			paxNinos,
+			porcentajePagoNinos,
 			taxPercent,
 			commPercent,
 		})

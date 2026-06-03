@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
@@ -66,10 +66,20 @@ const form = useForm({
 		moneda: 'USD',
 		estado: 'Draft',
 		cantidad_pax: 1,
+		cantidad_pax_ninos: 0,
+		porcentaje_pago_ninos: 50.0,
 		porcentaje_impuesto: 16.0,
 		porcentaje_comision: 0.0,
 		tipo_cambio: 7.05,
+		codigo_referencia: '',
 	},
+})
+
+const paxEfectivo = computed(() => {
+	const adults = Number(form.values.cantidad_pax) || 1
+	const kids = Number(form.values.cantidad_pax_ninos) || 0
+	const pctKids = Number(form.values.porcentaje_pago_ninos) ?? 50.0
+	return adults + kids * (pctKids / 100)
 })
 
 const loadDependencies = async () => {
@@ -140,7 +150,6 @@ const loadQuote = async (id: number) => {
 	try {
 		const quote = await QuoteService.getQuoteById(id)
 		currentQuote.value = quote // Update state for workflow
-		console.log(quote)
 
 		// Ensure the selected client is in our objects for hoja_id lookup
 		if (quote.clientes) {
@@ -154,6 +163,8 @@ const loadQuote = async (id: number) => {
 			cliente_id: quote.cliente_id || undefined,
 			nombre_grupo: quote.nombre_grupo || '',
 			cantidad_pax: quote.cantidad_pax || 1,
+			cantidad_pax_ninos: quote.cantidad_pax_ninos || 0,
+			porcentaje_pago_ninos: Number(quote.porcentaje_pago_ninos) ?? 50.0,
 			fecha_validez_hasta: quote.fecha_validez_hasta || undefined,
 			moneda: (quote.moneda as any) || 'USD',
 			tipo_cambio: quote.tipo_cambio ?? 7.05,
@@ -163,6 +174,7 @@ const loadQuote = async (id: number) => {
 			estado: (quote.estado as any) || 'Draft',
 			notas_para_cliente: quote.notas_para_cliente || '',
 			notas_internas_agencia: quote.notas_internas_agencia || '',
+			codigo_referencia: quote.codigo_referencia || '',
 		})
 	} catch (error: any) {
 		toast.error('Error al cargar cotización', { description: error.message })
@@ -214,7 +226,13 @@ const onSubmit = form.handleSubmit(async (values) => {
 				<div>
 					<div class="flex items-center gap-2">
 						<h3 class="text-lg font-medium">
-							{{ quoteId ? `Cotización #${quoteId}` : 'Nueva Cotización' }}
+							{{
+								currentQuote?.codigo_referencia
+									? `Cotización ${currentQuote.codigo_referencia}`
+									: quoteId
+										? `Cotización #${quoteId}`
+										: 'Nueva Cotización'
+							}}
 						</h3>
 						<QuoteStatusBadge
 							v-if="currentQuote"
@@ -317,7 +335,7 @@ const onSubmit = form.handleSubmit(async (values) => {
 								<div class="grid grid-cols-2 gap-4">
 									<FormField v-slot="{ componentField }" name="cantidad_pax">
 										<FormItem>
-											<FormLabel>Nº Pax</FormLabel>
+											<FormLabel>Pax Adultos</FormLabel>
 											<FormControl>
 												<Input type="number" v-bind="componentField" />
 											</FormControl>
@@ -325,12 +343,43 @@ const onSubmit = form.handleSubmit(async (values) => {
 										</FormItem>
 									</FormField>
 
-									<!-- Estado Field Hidden or Readonly in UI (Managed by Workflow) -->
-									<div class="hidden">
-										<FormField v-slot="{ componentField }" name="estado">
-											<Input v-bind="componentField" />
-										</FormField>
-									</div>
+									<FormField
+										v-slot="{ componentField }"
+										name="cantidad_pax_ninos"
+									>
+										<FormItem>
+											<FormLabel>Pax Niños</FormLabel>
+											<FormControl>
+												<Input type="number" v-bind="componentField" />
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									</FormField>
+								</div>
+
+								<div
+									v-if="(form.values.cantidad_pax_ninos || 0) > 0"
+									class="grid grid-cols-2 gap-4"
+								>
+									<FormField
+										v-slot="{ componentField }"
+										name="porcentaje_pago_ninos"
+									>
+										<FormItem>
+											<FormLabel>% Pago Niños</FormLabel>
+											<FormControl>
+												<Input type="number" step="1" v-bind="componentField" />
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									</FormField>
+								</div>
+
+								<!-- Estado Field Hidden or Readonly in UI (Managed by Workflow) -->
+								<div class="hidden">
+									<FormField v-slot="{ componentField }" name="estado">
+										<Input v-bind="componentField" />
+									</FormField>
 								</div>
 
 								<Separator class="my-4" />
@@ -434,18 +483,6 @@ const onSubmit = form.handleSubmit(async (values) => {
 									</FormItem>
 								</FormField>
 
-								<FormField
-									v-slot="{ componentField }"
-									name="fecha_validez_hasta"
-								>
-									<FormItem class="mt-4">
-										<FormLabel>Válida Hasta</FormLabel>
-										<FormControl>
-											<Input type="date" v-bind="componentField" />
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								</FormField>
 
 								<Separator class="my-4" />
 
@@ -492,7 +529,10 @@ const onSubmit = form.handleSubmit(async (values) => {
 					<QuoteItemsList
 						:quote-id="quoteId"
 						:hoja-id="currentHojaId"
-						:pax="form.values.cantidad_pax || 1"
+						:pax="paxEfectivo"
+						:cantidad-pax-adultos="form.values.cantidad_pax || 1"
+						:cantidad-pax-ninos="form.values.cantidad_pax_ninos || 0"
+						:porcentaje-pago-ninos="form.values.porcentaje_pago_ninos || 50"
 						:tax-percent="form.values.porcentaje_impuesto || 0"
 						:comm-percent="form.values.porcentaje_comision || 0"
 						:exchange-rate="form.values.tipo_cambio || 7.05"

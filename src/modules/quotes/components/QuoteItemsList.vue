@@ -38,6 +38,9 @@ const props = defineProps<{
 	quoteId: number
 	hojaId: number | null
 	pax: number
+	cantidadPaxAdultos?: number
+	cantidadPaxNinos?: number
+	porcentajePagoNinos?: number
 	taxPercent: number
 	commPercent: number
 	exchangeRate: number
@@ -157,8 +160,13 @@ onMounted(() => {
 		<CardHeader class="flex flex-row items-center justify-between">
 			<CardTitle>Itinerario / Servicios</CardTitle>
 			<div class="flex items-center gap-2">
-				<Badge variant="outline" class="font-normal text-xs">
-					{{ pax }} Pax
+				<Badge variant="outline" class="font-normal text-xs bg-primary/5 text-primary border-primary/20">
+					<template v-if="cantidadPaxNinos && cantidadPaxNinos > 0">
+						{{ cantidadPaxAdultos }} Adultos + {{ cantidadPaxNinos }} Niños ({{ porcentajePagoNinos }}%)
+					</template>
+					<template v-else>
+						{{ pax }} Pax
+					</template>
 				</Badge>
 				<HasPermission name="quotes.edit">
 					<DropdownMenu v-if="!readonly">
@@ -297,7 +305,16 @@ onMounted(() => {
 				class="bg-muted/50 border-t flex flex-col items-end p-6 space-y-2"
 			>
 				<div class="w-full flex justify-between text-sm text-muted-foreground">
-					<span>Subtotal Neto (Pax x {{ pax }})</span>
+					<span>
+						Subtotal Neto (Pax x 
+						<template v-if="cantidadPaxNinos && cantidadPaxNinos > 0">
+							{{ cantidadPaxAdultos }} Ad. + {{ cantidadPaxNinos }} Niñ. al {{ porcentajePagoNinos }}%
+						</template>
+						<template v-else>
+							{{ pax }}
+						</template>
+						)
+					</span>
 					<span>{{ cur(subtotalNeto) }} USD</span>
 				</div>
 				<div class="w-full flex justify-between text-sm text-muted-foreground">
@@ -348,6 +365,8 @@ onMounted(() => {
 			:quote-id="quoteId"
 			:hoja-id="hojaId"
 			:pax="pax"
+			:cantidad-pax-adultos="cantidadPaxAdultos"
+			:cantidad-pax-ninos="cantidadPaxNinos"
 			:item-to-edit="editingItem"
 			@saved="onSaved"
 		/>
@@ -358,6 +377,8 @@ onMounted(() => {
 			:quote-id="quoteId"
 			:hoja-id="hojaId"
 			:pax="pax"
+			:cantidad-pax-adultos="cantidadPaxAdultos"
+			:cantidad-pax-ninos="cantidadPaxNinos"
 			:item-to-edit="editingItem"
 			@saved="onSaved"
 		/>
@@ -368,6 +389,8 @@ onMounted(() => {
 			:quote-id="quoteId"
 			:hoja-id="hojaId"
 			:pax="pax"
+			:cantidad-pax-adultos="cantidadPaxAdultos"
+			:cantidad-pax-ninos="cantidadPaxNinos"
 			:item-to-edit="editingItem"
 			@saved="onSaved"
 		/>

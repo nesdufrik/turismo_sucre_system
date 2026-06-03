@@ -55,7 +55,8 @@ export class QuotePdfGenerator {
 		this.drawWatermark()
 
 		// Save
-		const filename = `Cotizacion-${this.quote.cotizacion_id}-${this.quote.clientes?.nombre_completo || 'Cliente'}.pdf`
+		const refName = this.quote.codigo_referencia || `ID-${this.quote.cotizacion_id}`
+		const filename = `Cotizacion-${refName}-${this.quote.clientes?.nombre_completo || 'Cliente'}.pdf`
 		this.doc.save(filename)
 	}
 
@@ -218,7 +219,7 @@ export class QuotePdfGenerator {
 
 		doc.text('Ref:', startX - 7, 20)
 		doc.setFont('helvetica', 'bold')
-		doc.text(`Nº ${this.quote.cotizacion_id}`, startX, 26, { align: 'right' })
+		doc.text(this.quote.codigo_referencia || `Nº ${this.quote.cotizacion_id}`, startX, 26, { align: 'right' })
 
 		doc.setFont('helvetica', 'normal')
 		doc.setFontSize(8)
@@ -267,6 +268,8 @@ export class QuotePdfGenerator {
 		const email = this.quote.clientes?.email || ''
 		const groupName = this.quote.nombre_grupo || '-'
 		const pax = this.quote.cantidad_pax || 1
+		const paxNinos = this.quote.cantidad_pax_ninos || 0
+		const pctNinos = this.quote.porcentaje_pago_ninos ?? 50
 
 		// Left Column
 		doc.text(`Cliente: ${clientName}`, 14, startY + 8)
@@ -276,7 +279,11 @@ export class QuotePdfGenerator {
 		// Right Column
 		const col2X = 110
 		doc.text(`Grupo: ${groupName}`, col2X, startY + 8)
-		doc.text(`Pasajeros: ${pax}`, col2X, startY + 14)
+		if (paxNinos > 0) {
+			doc.text(`Pasajeros: ${pax} Ad. + ${paxNinos} Niñ. (${pctNinos}%)`, col2X, startY + 14)
+		} else {
+			doc.text(`Pasajeros: ${pax}`, col2X, startY + 14)
+		}
 		doc.text(`Moneda: ${this.quote.moneda}`, col2X, startY + 20)
 	}
 
@@ -285,7 +292,10 @@ export class QuotePdfGenerator {
 		const headers = [
 			['Fecha', 'Descripción', 'Código', 'Precio Unit.', 'Subtotal'],
 		]
-		const pax = this.quote.cantidad_pax || 1
+		const paxAdultos = this.quote.cantidad_pax || 1
+		const paxNinos = this.quote.cantidad_pax_ninos || 0
+		const pctNinos = this.quote.porcentaje_pago_ninos ?? 50
+		const paxEfectivo = paxAdultos + (paxNinos * (pctNinos / 100))
 
 		// Sort items by date
 		const sortedItems = [...this.items].sort((a, b) => {
@@ -310,7 +320,7 @@ export class QuotePdfGenerator {
 
 			// Calculations using Domain Logic
 			const price = item.precio_unitario_snapshot || 0
-			const rowTotal = PriceCalculator.calculateItemTotal(item, pax)
+			const rowTotal = PriceCalculator.calculateItemTotal(item, paxEfectivo)
 
 			return [
 				this.formatDate(item.fecha_servicio),
@@ -359,6 +369,8 @@ export class QuotePdfGenerator {
 		// Calculations using Domain Logic
 		const summary = PriceCalculator.calculateSummary(this.items, {
 			pax: this.quote.cantidad_pax || 1,
+			paxNinos: this.quote.cantidad_pax_ninos || 0,
+			porcentajePagoNinos: this.quote.porcentaje_pago_ninos ?? 50,
 			taxPercent: this.quote.porcentaje_impuesto || 0,
 			commPercent: this.quote.porcentaje_comision || 0,
 			exchangeRate: this.quote.tipo_cambio || undefined,
