@@ -280,6 +280,7 @@ export type Database = {
           cantidad_pax_ninos: number
           cliente_id: number | null
           codigo_referencia: string
+          costo_tour_conductor: number
           cotizacion_id: number
           creado_por: string | null
           estado: string | null
@@ -297,6 +298,7 @@ export type Database = {
           porcentaje_comision: number | null
           porcentaje_impuesto: number | null
           porcentaje_pago_ninos: number
+          tiene_tour_conductor: boolean
           tipo_cambio: number | null
           total_general: number | null
         }
@@ -305,7 +307,8 @@ export type Database = {
           cantidad_pax?: number | null
           cantidad_pax_ninos?: number
           cliente_id?: number | null
-          codigo_referencia?: string
+          codigo_referencia: string
+          costo_tour_conductor?: number
           cotizacion_id?: never
           creado_por?: string | null
           estado?: string | null
@@ -323,6 +326,7 @@ export type Database = {
           porcentaje_comision?: number | null
           porcentaje_impuesto?: number | null
           porcentaje_pago_ninos?: number
+          tiene_tour_conductor?: boolean
           tipo_cambio?: number | null
           total_general?: number | null
         }
@@ -332,6 +336,7 @@ export type Database = {
           cantidad_pax_ninos?: number
           cliente_id?: number | null
           codigo_referencia?: string
+          costo_tour_conductor?: number
           cotizacion_id?: never
           creado_por?: string | null
           estado?: string | null
@@ -349,6 +354,7 @@ export type Database = {
           porcentaje_comision?: number | null
           porcentaje_impuesto?: number | null
           porcentaje_pago_ninos?: number
+          tiene_tour_conductor?: boolean
           tipo_cambio?: number | null
           total_general?: number | null
         }
@@ -971,6 +977,7 @@ export type Database = {
           cliente_nombre: string | null
           cliente_telefono: string | null
           codigo_referencia: string | null
+          costo_tour_conductor: number | null
           cotizacion_id: number | null
           creado_por: string | null
           estado: string | null
@@ -983,6 +990,7 @@ export type Database = {
           porcentaje_comision: number | null
           porcentaje_impuesto: number | null
           porcentaje_pago_ninos: number | null
+          tiene_tour_conductor: boolean | null
           tipo_cambio: number | null
           total_general: number | null
         }
@@ -1015,6 +1023,7 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: undefined
       }
+      generate_unique_quote_reference: { Args: never; Returns: string }
       get_audit_tables: { Args: never; Returns: string[] }
       get_invite_details: { Args: { lookup_token: string }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
@@ -1320,6 +1329,7 @@ export type Database = {
           id: string
           in_progress_size: number
           key: string
+          metadata: Json | null
           owner_id: string | null
           upload_signature: string
           user_metadata: Json | null
@@ -1331,6 +1341,7 @@ export type Database = {
           id: string
           in_progress_size?: number
           key: string
+          metadata?: Json | null
           owner_id?: string | null
           upload_signature: string
           user_metadata?: Json | null
@@ -1342,6 +1353,7 @@ export type Database = {
           id?: string
           in_progress_size?: number
           key?: string
+          metadata?: Json | null
           owner_id?: string | null
           upload_signature?: string
           user_metadata?: Json | null
@@ -1456,12 +1468,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      allow_any_operation: {
+        Args: { expected_operations: string[] }
+        Returns: boolean
+      }
+      allow_only_operation: {
+        Args: { expected_operation: string }
+        Returns: boolean
+      }
       can_insert_object: {
         Args: { bucketid: string; metadata: Json; name: string; owner: string }
-        Returns: undefined
-      }
-      delete_leaf_prefixes: {
-        Args: { bucket_ids: string[]; names: string[] }
         Returns: undefined
       }
       extension: { Args: { name: string }; Returns: string }
@@ -1471,9 +1487,6 @@ export type Database = {
         Args: { p_delimiter: string; p_key: string; p_prefix: string }
         Returns: string
       }
-      get_level: { Args: { name: string }; Returns: number }
-      get_prefix: { Args: { name: string }; Returns: string }
-      get_prefixes: { Args: { name: string }; Returns: string[] }
       get_size_by_bucket: {
         Args: never
         Returns: {
@@ -1551,26 +1564,6 @@ export type Database = {
           created_at: string
           id: string
           key: string
-          last_accessed_at: string
-          metadata: Json
-          name: string
-          updated_at: string
-        }[]
-      }
-      search_legacy_v1: {
-        Args: {
-          bucketname: string
-          levels?: number
-          limits?: number
-          offsets?: number
-          prefix: string
-          search?: string
-          sortcolumn?: string
-          sortorder?: string
-        }
-        Returns: {
-          created_at: string
-          id: string
           last_accessed_at: string
           metadata: Json
           name: string
@@ -1741,4 +1734,3 @@ export const Constants = {
     },
   },
 } as const
-

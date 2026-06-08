@@ -374,10 +374,14 @@ export class QuotePdfGenerator {
 			taxPercent: this.quote.porcentaje_impuesto || 0,
 			commPercent: this.quote.porcentaje_comision || 0,
 			exchangeRate: this.quote.tipo_cambio || undefined,
+			tieneTourConductor: this.quote.tiene_tour_conductor || false,
+			costoTourConductor: Number(this.quote.costo_tour_conductor) || 0,
 		})
 
 		const {
 			subtotalNeto,
+			subtotalServicios = subtotalNeto,
+			costoTourConductor = 0,
 			taxAmount,
 			totalBruto,
 			commAmount,
@@ -389,10 +393,16 @@ export class QuotePdfGenerator {
 		const currency = this.quote.moneda || 'USD'
 		const exchangeRate = this.quote.tipo_cambio || 0
 
+		// Calculate height dynamically
+		let boxHeight = 45
+		if (this.quote.tiene_tour_conductor) boxHeight += 12
+		if (commPercent > 0) boxHeight += 6
+		if (currency === 'USD' && totalFinalBOB) boxHeight += 6
+
 		// Draw Box
 		doc.setDrawColor(200, 200, 200)
 		doc.setFillColor(250, 250, 250)
-		doc.rect(xPos - 5, finalY - 5, 75, 65, 'F') // Increased height for T/C
+		doc.rect(xPos - 5, finalY - 5, 75, boxHeight, 'F')
 
 		doc.setFontSize(10)
 
@@ -415,10 +425,26 @@ export class QuotePdfGenerator {
 
 		let currentY = finalY
 
+		if (this.quote.tiene_tour_conductor) {
+			drawLine(
+				'Subtotal Servicios:',
+				this.formatCurrency(subtotalServicios, currency),
+				currentY,
+			)
+			currentY += 6
+			drawLine(
+				'Tour Conductor (Fijo):',
+				this.formatCurrency(costoTourConductor, currency),
+				currentY,
+			)
+			currentY += 6
+		}
+
 		drawLine(
 			'Subtotal Neto:',
 			this.formatCurrency(subtotalNeto, currency),
 			currentY,
+			this.quote.tiene_tour_conductor
 		)
 
 		currentY += 6

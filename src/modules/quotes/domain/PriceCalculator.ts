@@ -5,6 +5,8 @@ export interface QuoteFinancialSettings {
   taxPercent: number
   commPercent: number
   exchangeRate?: number
+  tieneTourConductor?: boolean
+  costoTourConductor?: number
 }
 
 export interface QuoteCalculatableItem {
@@ -16,6 +18,8 @@ export interface QuoteCalculatableItem {
 
 export interface QuoteFinancialSummary {
   subtotalNeto: number
+  subtotalServicios?: number
+  costoTourConductor?: number
   taxAmount: number
   totalBruto: number
   commAmount: number
@@ -52,13 +56,25 @@ export const PriceCalculator = {
    * 5. Total Final (Total Bruto - Commission Amount)
    */
   calculateSummary(items: QuoteCalculatableItem[], settings: QuoteFinancialSettings): QuoteFinancialSummary {
-    const { pax, paxNinos = 0, porcentajePagoNinos = 50, taxPercent, commPercent, exchangeRate } = settings
+    const { 
+      pax, 
+      paxNinos = 0, 
+      porcentajePagoNinos = 50, 
+      taxPercent, 
+      commPercent, 
+      exchangeRate,
+      tieneTourConductor = false,
+      costoTourConductor = 0
+    } = settings
 
     const effectivePax = pax + (paxNinos * (porcentajePagoNinos / 100))
 
-    const subtotalNeto = items.reduce((sum, item) => {
+    const subtotalServicios = items.reduce((sum, item) => {
       return sum + this.calculateItemTotal(item, effectivePax)
     }, 0)
+
+    const tcCost = tieneTourConductor ? costoTourConductor : 0
+    const subtotalNeto = subtotalServicios + tcCost
 
     const taxAmount = subtotalNeto * (taxPercent / 100)
     const totalBruto = subtotalNeto + taxAmount
@@ -80,6 +96,8 @@ export const PriceCalculator = {
 
     const summary: QuoteFinancialSummary = {
       subtotalNeto,
+      subtotalServicios,
+      costoTourConductor: tcCost,
       taxAmount,
       totalBruto,
       commAmount,

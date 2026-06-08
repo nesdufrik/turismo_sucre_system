@@ -65,6 +65,8 @@ export class QuoteMessageGenerator {
 			taxPercent: this.quote.porcentaje_impuesto || 0,
 			commPercent: this.quote.porcentaje_comision || 0,
 			exchangeRate: this.quote.tipo_cambio || 0,
+			tieneTourConductor: this.quote.tiene_tour_conductor || false,
+			costoTourConductor: Number(this.quote.costo_tour_conductor) || 0,
 		})
 
 		const itemsHtml = this.items
@@ -114,9 +116,31 @@ export class QuoteMessageGenerator {
 
           <!-- Summary -->
           <div style="background-color: #f8fafc; padding: 20px; border-radius: 6px; margin-left: auto; width: 300px;">
+            ${
+							this.quote.tiene_tour_conductor
+								? `
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                <span style="color: #718096;">Subtotal Servicios:</span>
+                <span>${this.formatCurrency(summary.subtotalServicios ?? summary.subtotalNeto, currency)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                <span style="color: #718096;">Tour Conductor (Fijo):</span>
+                <span>${this.formatCurrency(summary.costoTourConductor ?? 0, currency)}</span>
+              </div>
+            `
+								: ''
+						}
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
-              <span style="color: #718096;">Subtotal:</span>
-              <span>${this.formatCurrency(summary.totalBruto, currency)}</span>
+              <span style="color: #718096; font-weight: ${this.quote.tiene_tour_conductor ? 'bold' : 'normal'};">Subtotal Neto:</span>
+              <span style="font-weight: ${this.quote.tiene_tour_conductor ? 'bold' : 'normal'};">${this.formatCurrency(summary.subtotalNeto, currency)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+              <span style="color: #718096;">Impuestos (${this.quote.porcentaje_impuesto || 0}%):</span>
+              <span>${this.formatCurrency(summary.taxAmount, currency)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+              <span style="color: #718096; font-weight: bold;">Subtotal:</span>
+              <span style="font-weight: bold;">${this.formatCurrency(summary.totalBruto, currency)}</span>
             </div>
             ${
 							this.quote.porcentaje_comision
@@ -186,6 +210,8 @@ export class QuoteMessageGenerator {
 			taxPercent: this.quote.porcentaje_impuesto || 0,
 			commPercent: this.quote.porcentaje_comision || 0,
 			exchangeRate: this.quote.tipo_cambio || 0,
+			tieneTourConductor: this.quote.tiene_tour_conductor || false,
+			costoTourConductor: Number(this.quote.costo_tour_conductor) || 0,
 		})
 
 		const sortedItems = [...this.items].sort((a, b) => {
@@ -219,9 +245,21 @@ export class QuoteMessageGenerator {
 		const exchangeRate = this.quote.tipo_cambio || 0
 
 		const summaryRows = `
+      ${
+				this.quote.tiene_tour_conductor
+					? `<tr>
+        <td style="padding:4px 10px; font-size:12px; text-align:right;">Subtotal Servicios:</td>
+        <td style="padding:4px 10px; font-size:12px; text-align:right;">${this.formatCurrency(summary.subtotalServicios ?? summary.subtotalNeto, currency)}</td>
+      </tr>
       <tr>
-        <td style="padding:4px 10px; font-size:12px; text-align:right;">Subtotal Neto:</td>
-        <td style="padding:4px 10px; font-size:12px; text-align:right;">${this.formatCurrency(summary.subtotalNeto, currency)}</td>
+        <td style="padding:4px 10px; font-size:12px; text-align:right;">Tour Conductor (Fijo):</td>
+        <td style="padding:4px 10px; font-size:12px; text-align:right;">${this.formatCurrency(summary.costoTourConductor ?? 0, currency)}</td>
+      </tr>`
+					: ''
+			}
+      <tr>
+        <td style="padding:4px 10px; font-size:12px; text-align:right; font-weight:${this.quote.tiene_tour_conductor ? 'bold' : 'normal'};">Subtotal Neto:</td>
+        <td style="padding:4px 10px; font-size:12px; text-align:right; font-weight:${this.quote.tiene_tour_conductor ? 'bold' : 'normal'};">${this.formatCurrency(summary.subtotalNeto, currency)}</td>
       </tr>
       ${
 				taxPercent > 0

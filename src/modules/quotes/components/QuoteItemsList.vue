@@ -46,6 +46,8 @@ const props = defineProps<{
 	exchangeRate: number
 	currency: string
 	readonly?: boolean
+	tieneTourConductor?: boolean
+	costoTourConductor?: number
 }>()
 
 const emit = defineEmits<{
@@ -71,6 +73,8 @@ const financialSummary = computed(() => {
 		taxPercent: props.taxPercent,
 		commPercent: props.commPercent,
 		exchangeRate: props.exchangeRate,
+		tieneTourConductor: props.tieneTourConductor,
+		costoTourConductor: props.costoTourConductor,
 	})
 })
 
@@ -306,7 +310,7 @@ onMounted(() => {
 			>
 				<div class="w-full flex justify-between text-sm text-muted-foreground">
 					<span>
-						Subtotal Neto (Pax x 
+						Subtotal Servicios (Pax x 
 						<template v-if="cantidadPaxNinos && cantidadPaxNinos > 0">
 							{{ cantidadPaxAdultos }} Ad. + {{ cantidadPaxNinos }} Niñ. al {{ porcentajePagoNinos }}%
 						</template>
@@ -315,6 +319,14 @@ onMounted(() => {
 						</template>
 						)
 					</span>
+					<span>{{ cur(financialSummary.subtotalServicios ?? subtotalNeto) }} USD</span>
+				</div>
+				<div v-if="tieneTourConductor" class="w-full flex justify-between text-sm text-muted-foreground border-b pb-1">
+					<span>Tour Conductor TC (Monto Fijo)</span>
+					<span>{{ cur(financialSummary.costoTourConductor ?? 0) }} USD</span>
+				</div>
+				<div class="w-full flex justify-between text-sm font-medium">
+					<span>Subtotal Neto</span>
 					<span>{{ cur(subtotalNeto) }} USD</span>
 				</div>
 				<div class="w-full flex justify-between text-sm text-muted-foreground">

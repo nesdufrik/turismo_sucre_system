@@ -110,7 +110,7 @@ describe('QuoteService', () => {
       const output = { cotizacion_id: 1, ...input }
       mocks.single.mockResolvedValue({ data: output, error: null })
 
-      const result = await QuoteService.createQuote(input)
+      const result = await QuoteService.createQuote(input as any)
       expect(mocks.insert).toHaveBeenCalledWith(input)
       expect(result).toEqual(output)
     })

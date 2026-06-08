@@ -31,6 +31,7 @@ import { Separator } from '@/components/ui/separator'
 import { toast } from 'vue-sonner'
 import { ArrowLeft, Save, Plus } from 'lucide-vue-next'
 import type { Tables } from '@/types/database.types'
+import { Switch } from '@/components/ui/switch'
 
 import QuoteItemsList from './QuoteItemsList.vue'
 import ClientSheet from '@/modules/crm/components/ClientSheet.vue'
@@ -72,6 +73,8 @@ const form = useForm({
 		porcentaje_comision: 0.0,
 		tipo_cambio: 7.05,
 		codigo_referencia: '',
+		tiene_tour_conductor: false,
+		costo_tour_conductor: 0.00,
 	},
 })
 
@@ -175,6 +178,8 @@ const loadQuote = async (id: number) => {
 			notas_para_cliente: quote.notas_para_cliente || '',
 			notas_internas_agencia: quote.notas_internas_agencia || '',
 			codigo_referencia: quote.codigo_referencia || '',
+			tiene_tour_conductor: quote.tiene_tour_conductor || false,
+			costo_tour_conductor: Number(quote.costo_tour_conductor) || 0.00,
 		})
 	} catch (error: any) {
 		toast.error('Error al cargar cotización', { description: error.message })
@@ -375,6 +380,42 @@ const onSubmit = form.handleSubmit(async (values) => {
 									</FormField>
 								</div>
 
+								<Separator class="my-4" />
+								<h4 class="text-sm font-semibold mb-3">
+									Tour Conductor (TC)
+								</h4>
+
+								<FormField v-slot="{ value, handleChange }" name="tiene_tour_conductor">
+									<FormItem class="flex flex-row items-center justify-between rounded-lg border p-3 shadow-xs">
+										<div class="space-y-0.5">
+											<FormLabel>¿Tiene Tour Conductor (TC)?</FormLabel>
+											<div class="text-[11px] text-muted-foreground">
+												Activar si el grupo tiene un TC asignado
+											</div>
+										</div>
+										<FormControl>
+											<Switch
+												:modelValue="value"
+												@update:modelValue="handleChange"
+											/>
+										</FormControl>
+									</FormItem>
+								</FormField>
+
+								<FormField
+									v-slot="{ componentField }"
+									v-if="form.values.tiene_tour_conductor"
+									name="costo_tour_conductor"
+								>
+									<FormItem>
+										<FormLabel>Monto Fijo a Cobrar (TC)</FormLabel>
+										<FormControl>
+											<Input type="number" step="0.01" min="0" placeholder="0.00" v-bind="componentField" />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								</FormField>
+
 								<!-- Estado Field Hidden or Readonly in UI (Managed by Workflow) -->
 								<div class="hidden">
 									<FormField v-slot="{ componentField }" name="estado">
@@ -537,6 +578,8 @@ const onSubmit = form.handleSubmit(async (values) => {
 						:comm-percent="form.values.porcentaje_comision || 0"
 						:exchange-rate="form.values.tipo_cambio || 7.05"
 						:currency="form.values.moneda || 'USD'"
+						:tiene-tour-conductor="form.values.tiene_tour_conductor || false"
+						:costo-tour-conductor="form.values.costo_tour_conductor || 0"
 						:readonly="!canEdit"
 						@refresh="quoteId && loadQuote(quoteId)"
 					/>

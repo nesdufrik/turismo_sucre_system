@@ -16,6 +16,8 @@ export const quoteSchema = z.object({
   notas_para_cliente: z.string().optional(),
   notas_internas_agencia: z.string().optional(),
   codigo_referencia: z.string().optional(),
+  tiene_tour_conductor: z.boolean().default(false),
+  costo_tour_conductor: z.number().min(0, 'Monto inválido').default(0.00),
 })
 
 export type QuoteFormValues = z.infer<typeof quoteSchema>

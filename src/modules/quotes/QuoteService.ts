@@ -130,7 +130,7 @@ export const QuoteService = {
 	},
 
 	async createQuote(quote: QuoteInsert) {
-		const payload = { ...quote }
+		const payload: any = { ...quote }
 		if (!payload.codigo_referencia) {
 			delete payload.codigo_referencia
 		}
@@ -246,7 +246,7 @@ export const QuoteService = {
 	async recalculateQuoteTotal(quoteId: number) {
 		const { data: quote, error: quoteError } = await supabase
 			.from('cotizaciones')
-			.select('cantidad_pax, cantidad_pax_ninos, porcentaje_pago_ninos, porcentaje_impuesto, porcentaje_comision')
+			.select('cantidad_pax, cantidad_pax_ninos, porcentaje_pago_ninos, porcentaje_impuesto, porcentaje_comision, tiene_tour_conductor, costo_tour_conductor')
 			.eq('cotizacion_id', quoteId)
 			.single()
 
@@ -257,6 +257,8 @@ export const QuoteService = {
 		const porcentajePagoNinos = Number(quote.porcentaje_pago_ninos) ?? 50.0
 		const taxPercent = quote.porcentaje_impuesto || 0
 		const commPercent = quote.porcentaje_comision || 0
+		const tieneTourConductor = quote.tiene_tour_conductor || false
+		const costoTourConductor = Number(quote.costo_tour_conductor) || 0
 
 		const { data: items, error: itemsError } = await supabase
 			.from('itemscotizacion')
@@ -271,6 +273,8 @@ export const QuoteService = {
 			porcentajePagoNinos,
 			taxPercent,
 			commPercent,
+			tieneTourConductor,
+			costoTourConductor,
 		})
 
 		await supabase
