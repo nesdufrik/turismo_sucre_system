@@ -93,19 +93,18 @@ const handleGenerateReport = async () => {
 		}
 
 		// 2. Prepare Chart Data (Background)
-		const sold = rawData.filter((d) => d.estado === 'Sold').length
-		const apprv = rawData.filter((d) => d.estado === 'Approved').length
+		const liquidated = rawData.filter((d) => d.estado === 'Liquidated').length
 		const draft = rawData.filter(
 			(d) => d.estado === 'Draft' || d.estado === 'In_Review',
 		).length
 		const rejct = rawData.filter((d) => d.estado === 'Rejected').length
 
 		chartData.value = {
-			labels: ['Vendida', 'Aprobada', 'Borrador/Revisión', 'Rechazada'],
+			labels: ['Liquidada', 'Borrador/Revisión', 'Rechazada'],
 			datasets: [
 				{
-					data: [sold, apprv, draft, rejct],
-					backgroundColor: ['#2E7D32', '#1565C0', '#F57F17', '#C62828'],
+					data: [liquidated, draft, rejct],
+					backgroundColor: ['#1565C0', '#F57F17', '#C62828'],
 				},
 			],
 		}

@@ -9,9 +9,8 @@ export function useQuoteWorkflow(quote: { value: Quote | null }) {
 
 	const isDraft = computed(() => quote.value?.estado === 'Draft')
 	const isInReview = computed(() => quote.value?.estado === 'In_Review')
-	const isApproved = computed(() => quote.value?.estado === 'Approved')
+	const isLiquidated = computed(() => quote.value?.estado === 'Liquidated')
 	const isRejected = computed(() => quote.value?.estado === 'Rejected')
-	const isSold = computed(() => quote.value?.estado === 'Sold')
 
 	// Detect if it comes from AI (n8n)
 	const isAiGenerated = computed(() => {
@@ -28,13 +27,8 @@ export function useQuoteWorkflow(quote: { value: Quote | null }) {
 		// Si no hay cotización (es nueva), siempre se puede editar
 		if (!quote.value) return true
 
-		// Si está vendida, nadie edita (Snapshot estricto contable)
-		if (isSold.value) return false
-
-		// Si está aprobada, solo Ops/Admin pueden editar el Snapshot
-		if (isApproved.value) {
-			return can('quotes.approve')
-		}
+		// Si está liquidada, nadie edita (Snapshot estricto contable)
+		if (isLiquidated.value) return false
 
 		// Si está en revisión:
 		if (isInReview.value) {
@@ -51,19 +45,21 @@ export function useQuoteWorkflow(quote: { value: Quote | null }) {
 	// --- Actions Availability ---
 
 	const showRequestReview = computed(() => {
-		// Visible en Draft o Rejected, y NO aprobada ni vendida
+		// Visible en Draft o Rejected, y NO liquidada
 		if (!quote.value) return false
+		// No mostrar a usuarios que pueden liquidar directamente (supervisores/admin)
+		if (can('quotes.approve')) return false
 		return (
-			(isDraft.value || isRejected.value) && !isApproved.value && !isSold.value
+			(isDraft.value || isRejected.value) && !isLiquidated.value
 		)
 	})
 
-	const showApprove = computed(() => {
+	const showLiquidate = computed(() => {
 		if (!quote.value) return false
-		// Solo si tiene permiso de aprobar
+		// Solo si tiene permiso de aprobar (supervisor)
 		if (!can('quotes.approve')) return false
 
-		// Ops/Admin pueden aprobar desde Draft (Auto-approve) o desde In_Review
+		// Ops/Admin pueden liquidar desde Draft (Auto-liquidate) o desde In_Review
 		return isDraft.value || isInReview.value
 	})
 
@@ -76,13 +72,6 @@ export function useQuoteWorkflow(quote: { value: Quote | null }) {
 		return isInReview.value
 	})
 
-	const showMarkAsSold = computed(() => {
-		if (!quote.value) return false
-		// Solo visible si está aprobada.
-		// Todos (Agentes y Ops) deberían poder marcarla como vendida si el cliente confirma.
-		return isApproved.value
-	})
-
 	const showAiContext = computed(() => {
 		return isAiGenerated.value
 	})
@@ -90,15 +79,13 @@ export function useQuoteWorkflow(quote: { value: Quote | null }) {
 	return {
 		isDraft,
 		isInReview,
-		isApproved,
+		isLiquidated,
 		isRejected,
-		isSold,
 		isAiGenerated,
 		canEdit,
 		showRequestReview,
-		showApprove,
+		showLiquidate,
 		showReject,
-		showMarkAsSold,
 		showAiContext,
 	}
 }

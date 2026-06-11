@@ -114,13 +114,12 @@ export class QuoteReportPdfGenerator {
 		const doc = this.doc
 		const startY = 42
 
-		const soldItems = this.data.filter((d) => d.estado === 'Sold')
-		const approvedItems = this.data.filter((d) => d.estado === 'Approved')
+		const liquidatedItems = this.data.filter((d) => d.estado === 'Liquidated')
 
-		const totalUSD = soldItems
+		const totalUSD = liquidatedItems
 			.filter((d) => d.moneda === 'USD')
 			.reduce((acc, curr) => acc + (curr.total_general || 0), 0)
-		const totalBOB = soldItems
+		const totalBOB = liquidatedItems
 			.filter((d) => d.moneda === 'BOB')
 			.reduce((acc, curr) => acc + (curr.total_general || 0), 0)
 
@@ -137,22 +136,21 @@ export class QuoteReportPdfGenerator {
 			startY + 8,
 		)
 		doc.text(
-			`Cotizaciones Cerradas (Vendidas): ${soldItems.length}`,
+			`Cotizaciones Liquidadas: ${liquidatedItems.length}`,
 			14,
 			startY + 14,
 		)
-		doc.text(`Cotizaciones Aprobadas: ${approvedItems.length}`, 14, startY + 20)
 
 		const conversion =
 			this.data.length > 0
-				? Math.round((soldItems.length / this.data.length) * 100)
+				? Math.round((liquidatedItems.length / this.data.length) * 100)
 				: 0
-		doc.text(`Tasa de Cierre General: ${conversion}%`, 14, startY + 26)
+		doc.text(`Tasa de Cierre General: ${conversion}%`, 14, startY + 20)
 
 		// Right column
 		const col2X = 110
 		doc.setFont('helvetica', 'bold')
-		doc.text('Ventas Cerradas (Ingresos Brutos)', col2X, startY)
+		doc.text('Cotizaciones Liquidadas (Ingresos)', col2X, startY)
 		doc.setFont('helvetica', 'normal')
 
 		const formatCurrency = (val: number, cur: string) =>
@@ -219,9 +217,8 @@ export class QuoteReportPdfGenerator {
 			const statusTranslations: Record<string, string> = {
 				Draft: 'Borrador',
 				In_Review: 'En Revisión',
-				Approved: 'Aprobada',
+				Liquidated: 'Liquidada',
 				Rejected: 'Rechazada',
-				Sold: 'Vendida',
 			}
 
 			const st =

@@ -12,7 +12,7 @@ export const quoteSchema = z.object({
   porcentaje_impuesto: z.number().min(0).max(100),
   porcentaje_comision: z.number().min(0).max(100),
   id_cuenta_bancaria: z.string().uuid().optional(),
-  estado: z.enum(['Draft', 'In_Review', 'Approved', 'Rejected', 'Sold']).default('Draft'),
+  estado: z.enum(['Draft', 'In_Review', 'Liquidated', 'Rejected']).default('Draft'),
   notas_para_cliente: z.string().optional(),
   notas_internas_agencia: z.string().optional(),
   codigo_referencia: z.string().optional(),

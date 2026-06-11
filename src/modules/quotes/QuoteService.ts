@@ -396,13 +396,9 @@ export const QuoteService = {
         }
     },
 
-    async updateStatus(quoteId: number, status: 'Draft' | 'In_Review' | 'Approved' | 'Rejected' | 'Sold', reason?: string) {
+    async updateStatus(quoteId: number, status: 'Draft' | 'In_Review' | 'Liquidated' | 'Rejected', reason?: string) {
         const payload: any = {
             estado: status,
-        }
-
-        if (status === 'Approved') {
-            payload.fecha_aprobacion = new Date().toISOString()
         }
 
         if (status === 'Rejected' && reason) {
@@ -411,5 +407,14 @@ export const QuoteService = {
 
         const { error } = await supabase.from('cotizaciones').update(payload).eq('cotizacion_id', quoteId)
         if (error) throw error
+    },
+
+    async liquidateQuote(quoteId: number, userId: string) {
+        const { data, error } = await supabase.rpc('liquidar_cotizacion', {
+            p_cotizacion_id: quoteId,
+            p_usuario_id: userId
+        })
+        if (error) throw error
+        return data as number
     }
 }

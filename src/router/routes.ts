@@ -51,6 +51,11 @@ export const routes: RouteRecordRaw[] = [
 				component: () => import('@/modules/quotes/views/QuoteEditView.vue'),
 			},
 			{
+				path: 'liquidations',
+				name: 'Liquidaciones',
+				component: () => import('@/modules/liquidations/views/LiquidationListView.vue'),
+			},
+			{
 				path: 'crm',
 				name: 'CRM',
 				component: () => import('@/modules/crm/views/ClientManagerView.vue'),

@@ -546,6 +546,61 @@ export type Database = {
           },
         ]
       }
+      liquidaciones: {
+        Row: {
+          comprobante_pago: string | null
+          comprobante_url: string | null
+          cotizacion_id: number | null
+          creado_por: string | null
+          estado_pago: string
+          fecha_liquidacion: string
+          fecha_pago: string | null
+          liquidacion_id: number
+          metodo_pago: string | null
+          monto_total: number
+          notas: string | null
+        }
+        Insert: {
+          comprobante_pago?: string | null
+          comprobante_url?: string | null
+          cotizacion_id?: number | null
+          creado_por?: string | null
+          estado_pago?: string
+          fecha_liquidacion?: string
+          fecha_pago?: string | null
+          liquidacion_id?: number
+          metodo_pago?: string | null
+          monto_total: number
+          notas?: string | null
+        }
+        Update: {
+          comprobante_pago?: string | null
+          comprobante_url?: string | null
+          cotizacion_id?: number | null
+          creado_por?: string | null
+          estado_pago?: string
+          fecha_liquidacion?: string
+          fecha_pago?: string | null
+          liquidacion_id?: number
+          metodo_pago?: string | null
+          monto_total?: number
+          notas?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "liquidaciones_cotizacion_id_fkey"
+            columns: ["cotizacion_id"]
+            referencedRelation: "cotizaciones"
+            referencedColumns: ["cotizacion_id"]
+          },
+          {
+            foreignKeyName: "liquidaciones_cotizacion_id_fkey"
+            columns: ["cotizacion_id"]
+            referencedRelation: "v_cotizaciones_detalles"
+            referencedColumns: ["cotizacion_id"]
+          },
+        ]
+      }
       notificaciones: {
         Row: {
           fecha_creacion: string | null
@@ -1009,6 +1064,42 @@ export type Database = {
           },
         ]
       }
+      v_liquidaciones_detalles: {
+        Row: {
+          cantidad_pax: number | null
+          cliente_email: string | null
+          cliente_empresa: string | null
+          cliente_nombre: string | null
+          codigo_referencia: string | null
+          comprobante_pago: string | null
+          comprobante_url: string | null
+          cotizacion_id: number | null
+          creado_por: string | null
+          estado_pago: string | null
+          fecha_liquidacion: string | null
+          fecha_pago: string | null
+          liquidacion_id: number | null
+          metodo_pago: string | null
+          moneda: string | null
+          monto_total: number | null
+          nombre_grupo: string | null
+          notas: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "liquidaciones_cotizacion_id_fkey"
+            columns: ["cotizacion_id"]
+            referencedRelation: "cotizaciones"
+            referencedColumns: ["cotizacion_id"]
+          },
+          {
+            foreignKeyName: "liquidaciones_cotizacion_id_fkey"
+            columns: ["cotizacion_id"]
+            referencedRelation: "v_cotizaciones_detalles"
+            referencedColumns: ["cotizacion_id"]
+          },
+        ]
+      }
     }
     Functions: {
       assign_user_role: {
@@ -1028,6 +1119,10 @@ export type Database = {
       get_invite_details: { Args: { lookup_token: string }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
       jsonb_diff_val: { Args: { val1: Json; val2: Json }; Returns: Json }
+      liquidar_cotizacion: {
+        Args: { p_cotizacion_id: number; p_usuario_id: string }
+        Returns: number
+      }
       remove_user_roles: {
         Args: { target_user_id: string }
         Returns: undefined

@@ -12,12 +12,10 @@ const config = computed(() => {
       return { label: 'Borrador', variant: 'secondary' }
     case 'In_Review':
       return { label: 'En Revisión', variant: 'warning' } // Custom variant might be needed, using outline fallback
-    case 'Approved':
-      return { label: 'Aprobada', variant: 'default', class: 'bg-green-600 hover:bg-green-700' }
+    case 'Liquidated':
+      return { label: 'Liquidada', variant: 'default', class: 'bg-blue-600 hover:bg-blue-700 text-white' }
     case 'Rejected':
       return { label: 'Rechazada', variant: 'destructive' }
-    case 'Sold':
-      return { label: 'Vendida', variant: 'default', class: 'bg-blue-600 hover:bg-blue-700' }
     default:
       return { label: props.status || 'Desconocido', variant: 'outline' }
   }

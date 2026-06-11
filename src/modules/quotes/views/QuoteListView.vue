@@ -137,7 +137,7 @@ watch(searchQuery, () => {
 })
 
 const canDelete = (quote: QuoteWithClient) => {
-	return !['Approved', 'Sold'].includes(quote.estado || '')
+	return !['Liquidated'].includes(quote.estado || '')
 }
 
 const deleteQuote = async (quote: QuoteWithClient) => {
@@ -206,9 +206,8 @@ onUnmounted(() => {
 							<SelectItem value="all">Todos los estados</SelectItem>
 							<SelectItem value="Draft">Borrador</SelectItem>
 							<SelectItem value="In_Review">En Revisión</SelectItem>
-							<SelectItem value="Approved">Aprobada</SelectItem>
+							<SelectItem value="Liquidated">Liquidada</SelectItem>
 							<SelectItem value="Rejected">Rechazada</SelectItem>
-							<SelectItem value="Sold">Vendida</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>
@@ -219,7 +218,7 @@ onUnmounted(() => {
 				</Button>
 				<HasPermission name="quotes.create">
 					<Button @click="router.push({ name: 'QuoteCreate' })">
-						<Plus /> Nueva Cotización
+						<Plus /> Crear Nuevo
 					</Button>
 				</HasPermission>
 			</div>

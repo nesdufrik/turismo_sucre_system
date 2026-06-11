@@ -4,13 +4,20 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'vue-sonner'
 import {
 	Send,
-	CheckCircle,
 	XCircle,
 	Eye,
 	Printer,
 	BadgeDollarSign,
 	Share2,
+	Download,
+	ChevronDown,
 } from 'lucide-vue-next'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
 	QuoteService,
 	type Quote,
@@ -18,6 +25,7 @@ import {
 } from '../QuoteService'
 import { useQuoteWorkflow } from '../composables/useQuoteWorkflow'
 import { QuotePdfGenerator } from '@/modules/quotes/services/QuotePdfGenerator'
+import { useAuthStore } from '@/stores/auth'
 import QuoteRejectDialog from './QuoteRejectDialog.vue'
 import QuoteSendDialog from './QuoteSendDialog.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -32,17 +40,18 @@ const emit = defineEmits<{
 	(e: 'toggle-source'): void
 }>()
 
+const authStore = useAuthStore()
+
 const {
 	showRequestReview,
-	showApprove,
+	showLiquidate,
 	showReject,
-	showMarkAsSold,
 	showAiContext,
 } = useQuoteWorkflow(toRef(props, 'quote'))
 
 const isProcessing = ref(false)
 const showRejectDialog = ref(false)
-const showSoldDialog = ref(false)
+const showLiquidateDialog = ref(false)
 const showSendDialog = ref(false)
 
 const quoteContext = ref<{
@@ -52,7 +61,7 @@ const quoteContext = ref<{
 	logoUrl: string | null
 } | null>(null)
 
-const handleGeneratePdf = async () => {
+const handleGeneratePdf = async (action: 'open' | 'download' = 'open') => {
 	if (!props.quote) return
 
 	isProcessing.value = true
@@ -85,8 +94,8 @@ const handleGeneratePdf = async () => {
 			agencyConfig: context.config,
 			logoUrl: logoBase64,
 		})
-		generator.generate()
-		toast.success('PDF generado correctamente')
+		generator.generate(action)
+		toast.success(action === 'download' ? 'PDF descargado correctamente' : 'PDF generado correctamente')
 	} catch (error: any) {
 		console.error(error)
 		toast.error('Error al generar PDF', { description: error.message })
@@ -125,43 +134,71 @@ const handleOpenSendDialog = async () => {
 }
 
 const handleStatusChange = async (
-	status: 'Draft' | 'In_Review' | 'Approved' | 'Rejected' | 'Sold',
+	status: 'Draft' | 'In_Review' | 'Liquidated' | 'Rejected',
 	reason?: string,
 ) => {
 	if (!props.quote) return
 
-	// Confirmation for Sold is handled via Dialog now
 	isProcessing.value = true
 	try {
 		await QuoteService.updateStatus(props.quote.cotizacion_id, status, reason)
-		const msg =
-			status === 'Sold'
-				? '¡Venta Cerrada! Felicitaciones.'
-				: `Estado actualizado a: ${status}`
-		toast.success(msg)
+		toast.success(`Estado actualizado a: ${status}`)
 		emit('refresh')
 	} catch (error: any) {
 		toast.error('Error al actualizar estado', { description: error.message })
 	} finally {
 		isProcessing.value = false
 		showRejectDialog.value = false
-		showSoldDialog.value = false
+	}
+}
+
+const handleLiquidate = async () => {
+	if (!props.quote) return
+
+	isProcessing.value = true
+	try {
+		const userId = authStore.user?.id
+		if (!userId) throw new Error('Usuario no autenticado')
+
+		await QuoteService.liquidateQuote(props.quote.cotizacion_id, userId)
+		toast.success('¡Cotización Liquidada con éxito!')
+		emit('refresh')
+	} catch (error: any) {
+		toast.error('Error al liquidar cotización', { description: error.message })
+	} finally {
+		isProcessing.value = false
+		showLiquidateDialog.value = false
 	}
 }
 </script>
 
 <template>
-	<div class="flex items-center gap-2" v-if="quote">
-		<!-- PDF Generation -->
-		<Button
-			variant="outline"
-			size="sm"
-			:disabled="isProcessing"
-			@click="handleGeneratePdf"
-		>
-			<Printer />
-			PDF
-		</Button>
+	<div class="flex flex-wrap items-center gap-2" v-if="quote">
+		<!-- PDF Actions Dropdown -->
+		<DropdownMenu>
+			<DropdownMenuTrigger as-child>
+				<Button
+					variant="outline"
+					size="sm"
+					:disabled="isProcessing"
+					title="Opciones de PDF"
+				>
+					<Printer class="w-4 h-4 mr-2" />
+					PDF
+					<ChevronDown class="w-4 h-4 ml-2" />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="start">
+				<DropdownMenuItem @click="handleGeneratePdf('open')">
+					<Eye class="w-4 h-4 mr-2" />
+					Ver PDF (Nueva Pestaña)
+				</DropdownMenuItem>
+				<DropdownMenuItem @click="handleGeneratePdf('download')">
+					<Download class="w-4 h-4 mr-2" />
+					Descargar PDF
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
 
 		<!-- Send to Client -->
 		<HasPermission name="quotes.send">
@@ -216,27 +253,14 @@ const handleStatusChange = async (
 
 		<HasPermission name="quotes.approve">
 			<Button
-				v-if="showApprove"
+				v-if="showLiquidate"
 				class="bg-green-600 hover:bg-green-700 text-white"
 				size="sm"
 				:disabled="isProcessing"
-				@click="handleStatusChange('Approved')"
+				@click="showLiquidateDialog = true"
 			>
-				<CheckCircle />
-				Aprobar
-			</Button>
-		</HasPermission>
-
-		<HasPermission name="quotes.approve">
-			<Button
-				v-if="showMarkAsSold"
-				class="bg-blue-600 hover:bg-blue-700 text-white"
-				size="sm"
-				:disabled="isProcessing"
-				@click="showSoldDialog = true"
-			>
-				<BadgeDollarSign />
-				Cerrar Venta
+				<BadgeDollarSign class="w-4 h-4 mr-2" />
+				Liquidar
 			</Button>
 		</HasPermission>
 
@@ -257,12 +281,12 @@ const handleStatusChange = async (
 		/>
 
 		<ConfirmDialog
-			v-model:open="showSoldDialog"
+			v-model:open="showLiquidateDialog"
 			:loading="isProcessing"
-			title="¿Cerrar Venta?"
-			description="Estás confirmando que el cliente ha aceptado y pagado la cotización. Esto marcará la operación como exitosa."
-			confirm-text="Confirmar Venta"
-			@confirm="handleStatusChange('Sold')"
+			title="¿Liquidar Cotización?"
+			description="Al liquidar la cotización se creará una liquidación de servicios y el estado cambiará a Liquidada. Esta acción no se puede deshacer."
+			confirm-text="Confirmar Liquidación"
+			@confirm="handleLiquidate"
 		/>
 	</div>
 </template>

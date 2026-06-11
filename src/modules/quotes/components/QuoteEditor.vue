@@ -223,7 +223,7 @@ const onSubmit = form.handleSubmit(async (values) => {
 <template>
 	<div class="space-y-6">
 		<!-- Header Actions -->
-		<div class="flex items-center justify-between">
+		<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 			<div class="flex items-center gap-4">
 				<Button variant="outline" size="icon" @click="router.back()">
 					<ArrowLeft class="w-4 h-4" />
@@ -248,7 +248,7 @@ const onSubmit = form.handleSubmit(async (values) => {
 				</div>
 			</div>
 
-			<div class="flex items-center gap-2">
+			<div class="flex flex-wrap items-center gap-2">
 				<QuoteActions
 					v-if="quoteId"
 					:quote="currentQuote"
@@ -262,7 +262,7 @@ const onSubmit = form.handleSubmit(async (values) => {
 					:disabled="isLoading"
 					size="sm"
 				>
-					<Save />
+					<Save class="w-4 h-4 mr-2" />
 					Guardar
 				</Button>
 			</div>

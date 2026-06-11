@@ -66,9 +66,8 @@ export const DashboardService = {
     const statusDistribution: Record<string, number> = {
       'Draft': 0,
       'In_Review': 0,
-      'Approved': 0,
-      'Rejected': 0,
-      'Sold': 0
+      'Liquidated': 0,
+      'Rejected': 0
     }
 
     quotes.forEach(q => {
@@ -88,10 +87,10 @@ export const DashboardService = {
         statusDistribution[status] = 1
       }
 
-      if (q.estado === 'Sold') {
+      if (q.estado === 'Liquidated') {
         soldCount++
         totalSold += amount
-      } else if (q.estado === 'In_Review' || q.estado === 'Approved') {
+      } else if (q.estado === 'In_Review') {
         pendingCount++
       }
     })
@@ -142,7 +141,7 @@ export const DashboardService = {
 
       const entry = map.get(dateKey)!
       entry.quoted += amount
-      if (q.estado === 'Sold') {
+      if (q.estado === 'Liquidated') {
         entry.sold += amount
       }
     })

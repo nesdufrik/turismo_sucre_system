@@ -44,7 +44,7 @@ export class QuotePdfGenerator {
 		})
 	}
 
-	public generate() {
+	public generate(action: 'open' | 'download' = 'open') {
 		this.drawHeader()
 		this.drawClientInfo()
 		this.drawItineraryTable()
@@ -54,10 +54,22 @@ export class QuotePdfGenerator {
 		// Draw watermark LAST and with transparency to be on top of everything
 		this.drawWatermark()
 
-		// Save
+		// Open or download
 		const refName = this.quote.codigo_referencia || `ID-${this.quote.cotizacion_id}`
-		const filename = `Cotizacion-${refName}-${this.quote.clientes?.nombre_completo || 'Cliente'}.pdf`
-		this.doc.save(filename)
+		const prefix = this.quote.estado === 'Liquidated' ? 'Liquidacion' : 'Cotizacion'
+		const filename = `${prefix}-${refName}-${this.quote.clientes?.nombre_completo || 'Cliente'}.pdf`
+		
+		if (action === 'download') {
+			this.doc.save(filename)
+		} else {
+			this.doc.setProperties({
+				title: filename,
+			})
+
+			const blob = this.doc.output('blob')
+			const blobUrl = URL.createObjectURL(blob)
+			window.open(blobUrl, '_blank')
+		}
 	}
 
 	private formatCurrency(amount: number, currency: string = 'USD'): string {
@@ -95,46 +107,7 @@ export class QuotePdfGenerator {
 	}
 
 	private drawWatermark() {
-		if (this.quote.estado === 'Approved') return
-
-		const doc = this.doc
-		const text = 'BORRADOR'
-
-		// Use low opacity for watermark
-		doc.saveGraphicsState()
-		// @ts-ignore - setGState exists in standard jsPDF but types might be tricky
-		doc.setGState(new doc.GState({ opacity: 0.15 }))
-
-		doc.setTextColor(150, 150, 150)
-		doc.setFontSize(100)
-		doc.setFont('helvetica', 'bold')
-
-		const pageWidth = doc.internal.pageSize.getWidth()
-		const pageHeight = doc.internal.pageSize.getHeight()
-
-		// Approximate text height in mm for dynamically set font size
-		// jsPDF points to mm scale is 0.352777
-		const fontSize = doc.getFontSize()
-		const textWidth = doc.getTextWidth(text)
-		const textHeight = fontSize * 0.352777
-
-		const angleRad = (45 * Math.PI) / 180
-		const cosA = Math.cos(angleRad)
-		const sinA = Math.sin(angleRad)
-
-		const cx = pageWidth / 2
-		const cy = pageHeight / 2
-
-		// Mathematical origin coordinates for rotated text bounding box to ensure perfect center
-		const x = cx - (textWidth / 2) * cosA + (textHeight / 2) * sinA
-		const y = cy + (textWidth / 2) * sinA + (textHeight / 2) * cosA
-
-		// Draw perfectly centered across the page
-		doc.text(text, x, y, {
-			angle: 45,
-		})
-
-		doc.restoreGraphicsState()
+		// Removed watermark as per client request
 	}
 
 	private drawHeader() {
@@ -206,7 +179,10 @@ export class QuotePdfGenerator {
 		const country = this.agencyConfig?.empresa_pais || 'Bolivia'
 		doc.text(`${city} - ${country}`, centerX, 38, { align: 'center' })
 
-		// Right Side: Ref No & Dates
+		// Right Side: Ref No & Dates (Title removed from header)
+		const rightMargin = 14
+		const startX = pageWidth - rightMargin
+
 		doc.setFontSize(10)
 		doc.setTextColor(
 			this.colors.text[0],
@@ -214,9 +190,7 @@ export class QuotePdfGenerator {
 			this.colors.text[2],
 		)
 
-		const rightMargin = 14
-		const startX = pageWidth - rightMargin
-
+		doc.setFont('helvetica', 'normal')
 		doc.text('Ref:', startX - 7, 20)
 		doc.setFont('helvetica', 'bold')
 		doc.text(this.quote.codigo_referencia || `Nº ${this.quote.cotizacion_id}`, startX, 26, { align: 'right' })
@@ -246,8 +220,24 @@ export class QuotePdfGenerator {
 
 	private drawClientInfo() {
 		const doc = this.doc
-		const startY = 52
+		const pageWidth = doc.internal.pageSize.getWidth()
+		const centerX = pageWidth / 2
 
+		// Center-aligned, uppercase document title
+		const titleText = this.quote.estado === 'Liquidated' ? 'LIQUIDACIÓN' : 'COTIZACIÓN'
+		doc.setFont('helvetica', 'bold')
+		doc.setFontSize(16)
+		doc.setTextColor(
+			this.colors.primary[0],
+			this.colors.primary[1],
+			this.colors.primary[2],
+		)
+		doc.text(titleText, centerX, 50, { align: 'center' })
+
+		// Client Info Section
+		const startY = 60 // Pushed down from 52 to make room for title
+
+		doc.setFont('helvetica', 'normal')
 		doc.setFontSize(12)
 		doc.setTextColor(
 			this.colors.primary[0],
@@ -256,6 +246,7 @@ export class QuotePdfGenerator {
 		)
 		doc.text('INFORMACIÓN DEL CLIENTE', 14, startY)
 
+		doc.setFont('helvetica', 'normal')
 		doc.setFontSize(10)
 		doc.setTextColor(
 			this.colors.text[0],
@@ -332,7 +323,7 @@ export class QuotePdfGenerator {
 		})
 
 		autoTable(this.doc, {
-			startY: 82,
+			startY: 90,
 			head: headers,
 			body: body,
 			theme: 'grid',
@@ -556,11 +547,13 @@ export class QuotePdfGenerator {
 		currentY = pageHeight - 15
 		doc.setFontSize(8)
 		doc.setTextColor(150, 150, 150)
-		doc.text(
-			'Esta cotización está sujeta a disponibilidad y cambios sin previo aviso.',
-			14,
-			currentY,
-		)
+		if (this.quote.estado !== 'Liquidated') {
+			doc.text(
+				'Esta cotización está sujeta a disponibilidad y cambios sin previo aviso.',
+				14,
+				currentY,
+			)
+		}
 		doc.text('Generado por Sistema Turismo Sucre', pageWidth - 14, currentY, {
 			align: 'right',
 		})

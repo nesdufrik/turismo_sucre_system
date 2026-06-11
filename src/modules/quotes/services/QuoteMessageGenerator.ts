@@ -53,6 +53,7 @@ export class QuoteMessageGenerator {
 	}
 
 	public generateHtml(introMessage: string = ''): string {
+		const docTypeNameCap = this.quote.estado === 'Liquidated' ? 'Liquidación' : 'Cotización'
 		const paxAdultos = this.quote.cantidad_pax || 1
 		const paxNinos = this.quote.cantidad_pax_ninos || 0
 		const pctNinos = this.quote.porcentaje_pago_ninos ?? 50
@@ -90,14 +91,14 @@ export class QuoteMessageGenerator {
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #2d3748; max-width: 700px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
         <!-- Header -->
         <div style="background-color: #1e40af; padding: 30px 20px; text-align: center; color: white;">
-          <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px;">Cotización de Viaje</h1>
+          <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px;">${docTypeNameCap} de Viaje</h1>
           <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">Referencia: ${this.quote.codigo_referencia || `#${this.quote.cotizacion_id}`} | ${this.quote.nombre_grupo || 'Individual'}</p>
         </div>
 
         <div style="padding: 30px 25px;">
           <!-- Intro -->
           <div style="margin-bottom: 25px; line-height: 1.6;">
-            ${introMessage ? `<div style="white-space: pre-wrap; margin-bottom: 20px;">${introMessage}</div>` : `<p>Estimado/a <strong>${this.quote.clientes?.nombre_completo || 'Cliente'}</strong>, es un placer saludarte. Adjuntamos el detalle de los servicios cotizados:</p>`}
+            ${introMessage ? `<div style="white-space: pre-wrap; margin-bottom: 20px;">${introMessage}</div>` : `<p>Estimado/a <strong>${this.quote.clientes?.nombre_completo || 'Cliente'}</strong>, es un placer saludarte. Adjuntamos el detalle de los servicios ${this.quote.estado === 'Liquidated' ? 'liquidados' : 'cotizados'}:</p>`}
           </div>
 
           <!-- Table -->
@@ -190,7 +191,6 @@ export class QuoteMessageGenerator {
 
         <!-- Footer -->
         <div style="background-color: #f7fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #a0aec0;">
-          <p style="margin: 0 0 5px 0;">Esta cotización es válida hasta el ${this.formatDate(this.quote.fecha_validez_hasta)}</p>
           <p style="margin: 0;"><strong>Turismo Sucre</strong> | Sucre, Bolivia</p>
         </div>
       </div>
@@ -198,6 +198,7 @@ export class QuoteMessageGenerator {
 	}
 
 	public generateClassicHtml(introMessage: string = ''): string {
+		const docTypeNameCap = this.quote.estado === 'Liquidated' ? 'Liquidación' : 'Cotización'
 		const paxAdultos = this.quote.cantidad_pax || 1
 		const paxNinos = this.quote.cantidad_pax_ninos || 0
 		const pctNinos = this.quote.porcentaje_pago_ninos ?? 50
@@ -321,6 +322,9 @@ export class QuoteMessageGenerator {
 
         <!-- Client Info -->
         <div style="margin-bottom: 15px;">
+          <div style="text-align: center;">
+          <h1 style="margin: 0; font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">${docTypeNameCap}</h1>
+          </div>
           <div style="font-size: 13px; font-weight: bold; color: #2980b9; text-decoration: underline; margin-bottom: 8px;">INFORMACIÓN DEL CLIENTE</div>
           <table style="width: 100%; font-size: 12px;">
             <tr>
@@ -393,8 +397,7 @@ export class QuoteMessageGenerator {
 
         <!-- Footer -->
         <div style="font-size: 10px; color: #aaa; text-align: center; border-top: 1px solid #ddd; padding-top: 8px;">
-          <p style="margin: 0 0 3px 0;">Cotización válida hasta: ${this.formatDate(this.quote.fecha_validez_hasta)}</p>
-          <p style="margin: 0;">Esta cotización está sujeta a disponibilidad y cambios sin previo aviso.</p>
+          ${this.quote.estado !== 'Liquidated' ? '<p style="margin: 0;">Esta cotización está sujeta a disponibilidad y cambios sin previo aviso.</p>' : ''}
         </div>
       </div>
     `

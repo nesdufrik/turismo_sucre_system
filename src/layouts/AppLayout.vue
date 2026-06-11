@@ -19,6 +19,7 @@ import {
 	FileClock,
 	ShieldUser,
 	Building2,
+	BadgeDollarSign,
 } from 'lucide-vue-next'
 import {
 	SidebarProvider,
@@ -59,6 +60,12 @@ const platformItems = computed(() => {
 			title: 'Cotizaciones',
 			url: '/quotes',
 			icon: FileText,
+			permission: 'quotes.view',
+		},
+		{
+			title: 'Liquidaciones',
+			url: '/liquidations',
+			icon: BadgeDollarSign,
 			permission: 'quotes.view',
 		},
 		{ title: 'Clientes', url: '/crm', icon: Users },
