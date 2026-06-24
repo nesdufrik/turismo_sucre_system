@@ -416,5 +416,36 @@ export const QuoteService = {
         })
         if (error) throw error
         return data as number
+    },
+
+    async reopenQuote(quoteId: number, justification: string, userId: string) {
+        const { error } = await supabase.rpc('reabrir_cotizacion', {
+            p_cotizacion_id: quoteId,
+            p_justificacion: justification,
+            p_usuario_id: userId
+        })
+        if (error) throw error
+    },
+
+    async getReopeningHistory(quoteId: number) {
+        const { data, error } = await supabase
+            .from('reaperturas_cotizaciones')
+            .select(`
+                reapertura_id,
+                cotizacion_id,
+                justificacion,
+                creado_por,
+                fecha_reapertura,
+                monto_anterior,
+                estado_pago_anterior,
+                profiles:creado_por (
+                    full_name
+                )
+            `)
+            .eq('cotizacion_id', quoteId)
+            .order('fecha_reapertura', { ascending: false })
+
+        if (error) throw error
+        return data as any[]
     }
 }

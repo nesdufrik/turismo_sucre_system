@@ -15,6 +15,25 @@ export interface AuditFilters {
   limit?: number
 }
 
+export interface OperationalAuditLog {
+  tipo_evento: 'reapertura_cotizacion' | 'modificacion_pago' | 'anulacion_pago'
+  evento_id: number
+  registro_id: number
+  referencia: string | null
+  justificacion: string
+  usuario_id: string | null
+  usuario_nombre: string | null
+  usuario_email: string | null
+  fecha: string
+  detalles: {
+    monto_anterior?: number
+    estado_pago_anterior?: string
+    tipo_modificacion?: string
+    valores_anteriores?: any
+    valores_nuevos?: any
+  }
+}
+
 export const AuditService = {
   async getLogs(filters: AuditFilters = {}) {
     let query = supabase
@@ -48,5 +67,16 @@ export const AuditService = {
         return Array.from(tables).sort()
     }
     return data
+  },
+
+  async getOperationalLogs(limit: number = 100): Promise<OperationalAuditLog[]> {
+    const { data, error } = await supabase
+      .from('v_auditoria_operativa')
+      .select('*')
+      .order('fecha', { ascending: false })
+      .limit(limit)
+
+    if (error) throw error
+    return data as any as OperationalAuditLog[]
   }
 }

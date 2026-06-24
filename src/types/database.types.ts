@@ -601,6 +601,58 @@ export type Database = {
           },
         ]
       }
+      modificaciones_liquidaciones: {
+        Row: {
+          creado_por: string | null
+          fecha_modificacion: string
+          justificacion: string
+          liquidacion_id: number | null
+          modificacion_id: number
+          tipo_modificacion: string
+          valores_anteriores: Json | null
+          valores_nuevos: Json | null
+        }
+        Insert: {
+          creado_por?: string | null
+          fecha_modificacion?: string
+          justificacion: string
+          liquidacion_id?: number | null
+          modificacion_id?: number
+          tipo_modificacion: string
+          valores_anteriores?: Json | null
+          valores_nuevos?: Json | null
+        }
+        Update: {
+          creado_por?: string | null
+          fecha_modificacion?: string
+          justificacion?: string
+          liquidacion_id?: number | null
+          modificacion_id?: number
+          tipo_modificacion?: string
+          valores_anteriores?: Json | null
+          valores_nuevos?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modificaciones_liquidaciones_creado_por_fkey"
+            columns: ["creado_por"]
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "modificaciones_liquidaciones_liquidacion_id_fkey"
+            columns: ["liquidacion_id"]
+            referencedRelation: "liquidaciones"
+            referencedColumns: ["liquidacion_id"]
+          },
+          {
+            foreignKeyName: "modificaciones_liquidaciones_liquidacion_id_fkey"
+            columns: ["liquidacion_id"]
+            referencedRelation: "v_liquidaciones_detalles"
+            referencedColumns: ["liquidacion_id"]
+          },
+        ]
+      }
       notificaciones: {
         Row: {
           fecha_creacion: string | null
@@ -797,6 +849,55 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      reaperturas_cotizaciones: {
+        Row: {
+          cotizacion_id: number | null
+          creado_por: string | null
+          estado_pago_anterior: string
+          fecha_reapertura: string
+          justificacion: string
+          monto_anterior: number
+          reapertura_id: number
+        }
+        Insert: {
+          cotizacion_id?: number | null
+          creado_por?: string | null
+          estado_pago_anterior: string
+          fecha_reapertura?: string
+          justificacion: string
+          monto_anterior: number
+          reapertura_id?: number
+        }
+        Update: {
+          cotizacion_id?: number | null
+          creado_por?: string | null
+          estado_pago_anterior?: string
+          fecha_reapertura?: string
+          justificacion?: string
+          monto_anterior?: number
+          reapertura_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reaperturas_cotizaciones_cotizacion_id_fkey"
+            columns: ["cotizacion_id"]
+            referencedRelation: "cotizaciones"
+            referencedColumns: ["cotizacion_id"]
+          },
+          {
+            foreignKeyName: "reaperturas_cotizaciones_cotizacion_id_fkey"
+            columns: ["cotizacion_id"]
+            referencedRelation: "v_cotizaciones_detalles"
+            referencedColumns: ["cotizacion_id"]
+          },
+          {
+            foreignKeyName: "reaperturas_cotizaciones_creado_por_fkey"
+            columns: ["creado_por"]
+            referencedRelation: "profiles"
+            referencedColumns: ["profile_id"]
+          },
+        ]
       }
       role_permissions: {
         Row: {
@@ -1021,6 +1122,21 @@ export type Database = {
       }
     }
     Views: {
+      v_auditoria_operativa: {
+        Row: {
+          detalles: Json | null
+          evento_id: number | null
+          fecha: string | null
+          justificacion: string | null
+          referencia: string | null
+          registro_id: number | null
+          tipo_evento: string | null
+          usuario_email: string | null
+          usuario_id: string | null
+          usuario_nombre: string | null
+        }
+        Relationships: []
+      }
       v_cotizaciones_detalles: {
         Row: {
           cantidad_pax: number | null
@@ -1110,6 +1226,18 @@ export type Database = {
         Args: { required_permission: string }
         Returns: boolean
       }
+      editar_pago_liquidacion: {
+        Args: {
+          p_comprobante_pago: string
+          p_comprobante_url: string
+          p_justificacion: string
+          p_liquidacion_id: number
+          p_metodo_pago: string
+          p_notas: string
+          p_usuario_id: string
+        }
+        Returns: undefined
+      }
       fn_sync_user_claims: {
         Args: { target_user_id: string }
         Returns: undefined
@@ -1123,8 +1251,24 @@ export type Database = {
         Args: { p_cotizacion_id: number; p_usuario_id: string }
         Returns: number
       }
+      reabrir_cotizacion: {
+        Args: {
+          p_cotizacion_id: number
+          p_justificacion: string
+          p_usuario_id: string
+        }
+        Returns: undefined
+      }
       remove_user_roles: {
         Args: { target_user_id: string }
+        Returns: undefined
+      }
+      revertir_pago_liquidacion: {
+        Args: {
+          p_justificacion: string
+          p_liquidacion_id: number
+          p_usuario_id: string
+        }
         Returns: undefined
       }
       sync_profile_emails: { Args: never; Returns: undefined }

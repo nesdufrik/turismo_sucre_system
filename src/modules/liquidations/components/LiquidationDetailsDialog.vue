@@ -19,6 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useRouter } from 'vue-router'
+import { usePermission } from '@/composables/usePermission'
+import { useAuthStore } from '@/stores/auth'
+import { QuoteService } from '@/modules/quotes/QuoteService'
+import QuoteReopenDialog from '@/modules/quotes/components/QuoteReopenDialog.vue'
 import { toast } from 'vue-sonner'
 import {
   Loader2,
@@ -27,7 +32,8 @@ import {
   Building,
   CreditCard,
   Upload,
-  ExternalLink
+  ExternalLink,
+  LockOpen
 } from 'lucide-vue-next'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -43,6 +49,18 @@ const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
   (e: 'refresh'): void
 }>()
+
+const router = useRouter()
+const { can } = usePermission()
+const authStore = useAuthStore()
+
+const showJustificationDialog = ref(false)
+const justificationAction = ref<'reopen_quote' | 'edit_payment' | 'revert_payment' | null>(null)
+const justificationTitle = ref('')
+const justificationDescription = ref('')
+const justificationPlaceholder = ref('')
+const justificationConfirmText = ref('')
+const isEditingPayment = ref(false)
 
 const loading = ref(false)
 const selectedFile = ref<File | null>(null)
@@ -61,6 +79,9 @@ watch(
       paymentMethod.value = ''
       referenceCode.value = ''
       notes.value = ''
+      isEditingPayment.value = false
+      showJustificationDialog.value = false
+      justificationAction.value = null
     }
   }
 )
@@ -79,6 +100,15 @@ const handleFileChange = (event: Event) => {
       fileName.value = file.name
     }
   }
+}
+
+const startEditPayment = () => {
+  if (!props.liquidation) return
+  paymentMethod.value = props.liquidation.metodo_pago || ''
+  referenceCode.value = props.liquidation.comprobante_pago || ''
+  notes.value = props.liquidation.notas || ''
+  fileName.value = props.liquidation.comprobante_url ? 'Comprobante actual (haga clic para cambiar)' : ''
+  isEditingPayment.value = true
 }
 
 const handleRegisterPayment = async () => {
@@ -105,16 +135,130 @@ const handleRegisterPayment = async () => {
     await LiquidationService.registerPayment(props.liquidation.liquidacion_id, {
       metodo_pago: paymentMethod.value,
       comprobante_pago: referenceCode.value,
-      comprobante_url: publicUrl,
+      comprobante_url: publicUrl || props.liquidation.comprobante_url || undefined,
       notas: notes.value
     })
 
-    toast.success('Pago registrado con éxito')
+    toast.success(isEditingPayment.value ? 'Pago actualizado con éxito' : 'Pago registrado con éxito')
+    isEditingPayment.value = false
     emit('refresh')
     emit('update:open', false)
   } catch (error: any) {
     console.error(error)
     toast.error('Error al registrar el pago', { description: error.message })
+  } finally {
+    loading.value = false
+  }
+}
+
+const startReopenQuote = () => {
+  justificationAction.value = 'reopen_quote'
+  justificationTitle.value = 'Reabrir Cotización para Edición'
+  justificationDescription.value = 'Esta cotización se encuentra liquidada. Ingresa una justificación para devolverla al estado Borrador.'
+  justificationPlaceholder.value = 'Ej: Se requiere corregir el número de pasajeros o cambiar un servicio...'
+  justificationConfirmText.value = 'Confirmar Reapertura'
+  showJustificationDialog.value = true
+}
+
+const startSaveEditPayment = () => {
+  if (!paymentMethod.value) {
+    toast.error('Seleccione un método de pago')
+    return
+  }
+  if (!referenceCode.value) {
+    toast.error('El número de comprobante o referencia es obligatorio')
+    return
+  }
+  justificationAction.value = 'edit_payment'
+  justificationTitle.value = 'Justificar Modificación de Pago'
+  justificationDescription.value = 'Ingresa una justificación detallada explicando por qué se están modificando los datos del pago registrado.'
+  justificationPlaceholder.value = 'Ej: Corrección de error de tipeo en el número de referencia bancaria...'
+  justificationConfirmText.value = 'Guardar Modificación'
+  showJustificationDialog.value = true
+}
+
+const startRevertPayment = () => {
+  justificationAction.value = 'revert_payment'
+  justificationTitle.value = 'Anular Registro de Pago'
+  justificationDescription.value = 'Ingresa una justificación para anular este cobro y devolver la liquidación al estado No Pagada. Los datos del comprobante anterior serán archivados.'
+  justificationPlaceholder.value = 'Ej: El pago fue rechazado por el banco o se cargó a una liquidación incorrecta...'
+  justificationConfirmText.value = 'Confirmar Anulación de Pago'
+  showJustificationDialog.value = true
+}
+
+const handleJustificationConfirm = async (justification: string) => {
+  if (justificationAction.value === 'reopen_quote') {
+    await executeReopenQuote(justification)
+  } else if (justificationAction.value === 'edit_payment') {
+    await executeEditPayment(justification)
+  } else if (justificationAction.value === 'revert_payment') {
+    await executeRevertPayment(justification)
+  }
+}
+
+const executeReopenQuote = async (justification: string) => {
+  if (!props.liquidation) return
+  loading.value = true
+  try {
+    const userId = authStore.user?.id
+    if (!userId) throw new Error('Usuario no autenticado')
+    await QuoteService.reopenQuote(props.liquidation.cotizacion_id, justification, userId)
+    toast.success('¡Cotización reabierta con éxito! Redirigiendo...')
+    emit('update:open', false)
+    router.push(`/quotes/${props.liquidation.cotizacion_id}`)
+  } catch (error: any) {
+    console.error(error)
+    toast.error('Error al reabrir cotización', { description: error.message })
+  } finally {
+    loading.value = false
+  }
+}
+
+const executeEditPayment = async (justification: string) => {
+  if (!props.liquidation) return
+  loading.value = true
+  try {
+    let publicUrl = ''
+    if (selectedFile.value) {
+      toast.info('Subiendo archivo de comprobante...')
+      publicUrl = await LiquidationService.uploadReceipt(selectedFile.value)
+    }
+    const userId = authStore.user?.id
+    if (!userId) throw new Error('Usuario no autenticado')
+
+    await LiquidationService.editPayment(props.liquidation.liquidacion_id, {
+      metodo_pago: paymentMethod.value,
+      comprobante_pago: referenceCode.value,
+      comprobante_url: publicUrl || props.liquidation.comprobante_url || undefined,
+      notas: notes.value
+    }, justification, userId)
+
+    toast.success('Pago actualizado con éxito')
+    isEditingPayment.value = false
+    emit('refresh')
+    emit('update:open', false)
+  } catch (error: any) {
+    console.error(error)
+    toast.error('Error al actualizar el pago', { description: error.message })
+  } finally {
+    loading.value = false
+  }
+}
+
+const executeRevertPayment = async (justification: string) => {
+  if (!props.liquidation) return
+  loading.value = true
+  try {
+    const userId = authStore.user?.id
+    if (!userId) throw new Error('Usuario no autenticado')
+
+    await LiquidationService.revertPayment(props.liquidation.liquidacion_id, justification, userId)
+    toast.success('Pago anulado con éxito (marcado como No Pagado)')
+    emit('refresh')
+    emit('update:open', false)
+  } catch (error: any) {
+    console.error(error)
+    toast.error('Error al anular el pago', { description: error.message })
   } finally {
     loading.value = false
   }
@@ -170,11 +314,34 @@ const formatCurrency = (amount: number, currency: string = 'USD') => {
           </div>
         </div>
 
-        <!-- Información de Pago (Si ya está pagada) -->
-        <div v-if="liquidation.estado_pago === 'paid'" class="space-y-4 border rounded-lg p-4 bg-green-50/20 dark:bg-green-950/10 border-green-200/50">
-          <h4 class="text-sm font-bold text-green-700 dark:text-green-400 flex items-center gap-1.5">
-            <CreditCard class="w-4 h-4" />
-            Información del Pago
+        <!-- Información de Pago (Si ya está pagada y no se está editando) -->
+        <div v-if="liquidation.estado_pago === 'paid' && !isEditingPayment" class="space-y-4 border rounded-lg p-4 bg-green-50/20 dark:bg-green-950/10 border-green-200/50">
+          <h4 class="text-sm font-bold text-green-700 dark:text-green-400 flex items-center justify-between gap-1.5 w-full">
+            <span class="flex items-center gap-1.5">
+              <CreditCard class="w-4 h-4" />
+              Información del Pago
+            </span>
+            <div class="flex items-center gap-2">
+              <Button
+                v-if="can('quotes.approve')"
+                variant="link"
+                size="sm"
+                class="h-auto p-0 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                @click="startEditPayment"
+              >
+                Editar Pago
+              </Button>
+              <span v-if="can('quotes.approve')" class="text-muted-foreground text-xs">|</span>
+              <Button
+                v-if="can('quotes.approve')"
+                variant="link"
+                size="sm"
+                class="h-auto p-0 text-xs text-red-600 hover:text-red-700 font-medium"
+                @click="startRevertPayment"
+              >
+                Anular Pago
+              </Button>
+            </div>
           </h4>
           <div class="grid grid-cols-2 gap-4 text-xs">
             <div class="space-y-0.5">
@@ -205,11 +372,11 @@ const formatCurrency = (amount: number, currency: string = 'USD') => {
           </div>
         </div>
 
-        <!-- Formulario para Registrar Pago (Si no está pagada) -->
-        <div v-else class="space-y-4 border rounded-lg p-4 bg-card">
+        <!-- Formulario para Registrar/Editar Pago -->
+        <div v-else-if="liquidation.estado_pago !== 'paid' || isEditingPayment" class="space-y-4 border rounded-lg p-4 bg-card">
           <h4 class="text-sm font-bold flex items-center gap-1.5 border-b pb-2">
             <CreditCard class="w-4 h-4 text-primary" />
-            Registrar Cobro
+            {{ isEditingPayment ? 'Editar Pago' : 'Registrar Cobro' }}
           </h4>
           
           <div class="space-y-4">
@@ -270,20 +437,48 @@ const formatCurrency = (amount: number, currency: string = 'USD') => {
         </div>
       </div>
 
-      <DialogFooter class="gap-2 sm:gap-0">
+      <DialogFooter class="gap-2 sm:gap-0 flex-wrap">
+        <Button
+          v-if="liquidation && can('quotes.reopen')"
+          variant="outline"
+          class="border-blue-600 text-blue-600 hover:bg-blue-50 mr-auto"
+          @click="startReopenQuote"
+          :disabled="loading"
+        >
+          <LockOpen class="w-4 h-4 mr-2" />
+          Reabrir Cotización
+        </Button>
         <Button variant="outline" @click="emit('update:open', false)" :disabled="loading">
           Cerrar
         </Button>
         <Button 
-          v-if="liquidation && liquidation.estado_pago !== 'paid'" 
+          v-if="isEditingPayment" 
+          variant="ghost"
+          class="mr-2"
+          @click="isEditingPayment = false" 
+          :disabled="loading"
+        >
+          Cancelar
+        </Button>
+        <Button 
+          v-if="liquidation && (liquidation.estado_pago !== 'paid' || isEditingPayment)" 
           class="bg-green-600 hover:bg-green-700 text-white" 
-          @click="handleRegisterPayment"
+          @click="isEditingPayment ? startSaveEditPayment() : handleRegisterPayment()"
           :disabled="loading"
         >
           <Loader2 v-if="loading" class="w-4 h-4 mr-2 animate-spin" />
-          Registrar Pago
+          {{ isEditingPayment ? 'Guardar Cambios' : 'Registrar Pago' }}
         </Button>
       </DialogFooter>
+
+      <QuoteReopenDialog
+        v-model:open="showJustificationDialog"
+        :title="justificationTitle"
+        :description="justificationDescription"
+        :placeholder="justificationPlaceholder"
+        :confirm-text="justificationConfirmText"
+        @confirm="handleJustificationConfirm"
+      />
     </DialogContent>
   </Dialog>
 </template>

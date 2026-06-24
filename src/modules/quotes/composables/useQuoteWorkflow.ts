@@ -76,6 +76,11 @@ export function useQuoteWorkflow(quote: { value: Quote | null }) {
 		return isAiGenerated.value
 	})
 
+	const showReopen = computed(() => {
+		if (!quote.value) return false
+		return isLiquidated.value && can('quotes.reopen')
+	})
+
 	return {
 		isDraft,
 		isInReview,
@@ -87,5 +92,6 @@ export function useQuoteWorkflow(quote: { value: Quote | null }) {
 		showLiquidate,
 		showReject,
 		showAiContext,
+		showReopen,
 	}
 }

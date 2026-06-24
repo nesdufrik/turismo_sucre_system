@@ -94,6 +94,42 @@ export const LiquidationService = {
     return data
   },
 
+  async editPayment(
+    liquidacionId: number,
+    paymentData: {
+      metodo_pago: string
+      comprobante_pago: string
+      comprobante_url?: string
+      notas?: string
+    },
+    justification: string,
+    userId: string
+  ) {
+    const { error } = await supabase.rpc('editar_pago_liquidacion', {
+      p_liquidacion_id: liquidacionId,
+      p_metodo_pago: paymentData.metodo_pago,
+      p_comprobante_pago: paymentData.comprobante_pago,
+      p_comprobante_url: paymentData.comprobante_url || '',
+      p_notas: paymentData.notas || '',
+      p_justificacion: justification,
+      p_usuario_id: userId
+    })
+    if (error) throw error
+  },
+
+  async revertPayment(
+    liquidacionId: number,
+    justification: string,
+    userId: string
+  ) {
+    const { error } = await supabase.rpc('revertir_pago_liquidacion', {
+      p_liquidacion_id: liquidacionId,
+      p_justificacion: justification,
+      p_usuario_id: userId
+    })
+    if (error) throw error
+  },
+
   async uploadReceipt(file: File) {
     // Extraer extensión y generar un nombre único
     const ext = file.name.split('.').pop()

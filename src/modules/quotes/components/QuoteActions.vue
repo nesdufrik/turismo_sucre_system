@@ -11,6 +11,7 @@ import {
 	Share2,
 	Download,
 	ChevronDown,
+	LockOpen,
 } from 'lucide-vue-next'
 import {
 	DropdownMenu,
@@ -27,6 +28,7 @@ import { useQuoteWorkflow } from '../composables/useQuoteWorkflow'
 import { QuotePdfGenerator } from '@/modules/quotes/services/QuotePdfGenerator'
 import { useAuthStore } from '@/stores/auth'
 import QuoteRejectDialog from './QuoteRejectDialog.vue'
+import QuoteReopenDialog from './QuoteReopenDialog.vue'
 import QuoteSendDialog from './QuoteSendDialog.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import type { Tables } from '@/types/database.types'
@@ -47,12 +49,14 @@ const {
 	showLiquidate,
 	showReject,
 	showAiContext,
+	showReopen,
 } = useQuoteWorkflow(toRef(props, 'quote'))
 
 const isProcessing = ref(false)
 const showRejectDialog = ref(false)
 const showLiquidateDialog = ref(false)
 const showSendDialog = ref(false)
+const showReopenDialog = ref(false)
 
 const quoteContext = ref<{
 	items: QuoteItemWithDetails[]
@@ -170,6 +174,24 @@ const handleLiquidate = async () => {
 		showLiquidateDialog.value = false
 	}
 }
+
+const handleReopen = async (justification: string) => {
+	if (!props.quote) return
+
+	isProcessing.value = true
+	try {
+		const userId = authStore.user?.id
+		if (!userId) throw new Error('Usuario no autenticado')
+
+		await QuoteService.reopenQuote(props.quote.cotizacion_id, justification, userId)
+		toast.success('¡Cotización reabierta con éxito!')
+		emit('refresh')
+	} catch (error: any) {
+		toast.error('Error al reabrir cotización', { description: error.message })
+	} finally {
+		isProcessing.value = false
+	}
+}
 </script>
 
 <template>
@@ -264,6 +286,20 @@ const handleLiquidate = async () => {
 			</Button>
 		</HasPermission>
 
+		<HasPermission name="quotes.reopen">
+			<Button
+				v-if="showReopen"
+				variant="outline"
+				size="sm"
+				class="border-blue-600 text-blue-600 hover:bg-blue-50"
+				:disabled="isProcessing"
+				@click="showReopenDialog = true"
+			>
+				<LockOpen class="w-4 h-4 mr-2" />
+				Reabrir para Edición
+			</Button>
+		</HasPermission>
+
 		<!-- Dialogs -->
 		<QuoteRejectDialog
 			v-model:open="showRejectDialog"
@@ -287,6 +323,11 @@ const handleLiquidate = async () => {
 			description="Al liquidar la cotización se creará una liquidación de servicios y el estado cambiará a Liquidada. Esta acción no se puede deshacer."
 			confirm-text="Confirmar Liquidación"
 			@confirm="handleLiquidate"
+		/>
+
+		<QuoteReopenDialog
+			v-model:open="showReopenDialog"
+			@confirm="handleReopen"
 		/>
 	</div>
 </template>

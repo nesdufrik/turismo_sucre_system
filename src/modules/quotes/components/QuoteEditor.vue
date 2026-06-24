@@ -29,7 +29,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'vue-sonner'
-import { ArrowLeft, Save, Plus } from 'lucide-vue-next'
+import { ArrowLeft, Save, Plus, History, User } from 'lucide-vue-next'
 import type { Tables } from '@/types/database.types'
 import { Switch } from '@/components/ui/switch'
 
@@ -54,6 +54,7 @@ const bankAccounts = ref<Tables<'cuentas_bancarias'>[]>([])
 const currentQuote = ref<Quote | null>(null)
 const currentHojaId = ref<number | null>(null)
 const selectedClientObject = ref<Tables<'clientes'> | null>(null)
+const reopeningHistory = ref<any[]>([])
 
 // Workflow Logic
 const { canEdit } = useQuoteWorkflow(currentQuote as any)
@@ -181,6 +182,12 @@ const loadQuote = async (id: number) => {
 			tiene_tour_conductor: quote.tiene_tour_conductor || false,
 			costo_tour_conductor: Number(quote.costo_tour_conductor) || 0.00,
 		})
+
+		try {
+			reopeningHistory.value = await QuoteService.getReopeningHistory(id)
+		} catch (e) {
+			console.error('Error al cargar historial de reaperturas', e)
+		}
 	} catch (error: any) {
 		toast.error('Error al cargar cotización', { description: error.message })
 		router.push({ name: 'Quotes' })
@@ -560,6 +567,40 @@ const onSubmit = form.handleSubmit(async (values) => {
 								</FormField>
 							</fieldset>
 						</form>
+					</CardContent>
+				</Card>
+
+				<!-- Historial de Reaperturas -->
+				<Card v-if="reopeningHistory.length > 0" class="mt-4 border-blue-100 bg-blue-50/5 dark:bg-blue-950/5">
+					<CardHeader class="py-3">
+						<CardTitle class="text-sm font-semibold flex items-center gap-1.5 text-blue-700 dark:text-blue-400">
+							<History class="w-4 h-4" />
+							Historial de Reaperturas
+						</CardTitle>
+					</CardHeader>
+					<CardContent class="py-2 space-y-3">
+						<div 
+							v-for="item in reopeningHistory" 
+							:key="item.reapertura_id" 
+							class="text-xs border-b last:border-0 pb-3 last:pb-0"
+						>
+							<div class="flex items-center justify-between text-muted-foreground mb-1">
+								<span class="font-medium flex items-center gap-1">
+									<User class="w-3.5 h-3.5" />
+									{{ item.profiles?.full_name || 'Sistema/Admin' }}
+								</span>
+								<span>
+									{{ new Date(item.fecha_reapertura).toLocaleDateString() }} {{ new Date(item.fecha_reapertura).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+								</span>
+							</div>
+							<p class="italic text-foreground bg-muted/40 p-2 rounded border border-dashed border-muted">
+								"{{ item.justificacion }}"
+							</p>
+							<div class="flex gap-4 mt-1.5 text-[10px] text-muted-foreground font-mono">
+								<span>Monto Anterior: {{ new Intl.NumberFormat('en-US', { style: 'currency', currency: currentQuote?.moneda || 'USD' }).format(item.monto_anterior) }}</span>
+								<span class="capitalize">Pago: {{ item.estado_pago_anterior }}</span>
+							</div>
+						</div>
 					</CardContent>
 				</Card>
 			</div>
