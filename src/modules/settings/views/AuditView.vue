@@ -37,6 +37,7 @@ import {
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { toast } from 'vue-sonner'
+import { parseISO } from '@/lib/date-utils'
 
 // Active Tab
 const activeTab = ref('operational')
@@ -234,7 +235,7 @@ onMounted(() => {
 
                 <TableRow v-for="log in operationalLogs" :key="log.evento_id" class="group">
                   <TableCell class="text-xs font-medium">
-                    {{ log.fecha ? format(new Date(log.fecha), 'PPpp', { locale: es }) : '-' }}
+                    {{ log.fecha ? format(parseISO(log.fecha)!, 'PPpp', { locale: es }) : '-' }}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" :class="getEventTypeBadge(log.tipo_evento).class">
@@ -340,7 +341,7 @@ onMounted(() => {
 
                 <TableRow v-for="log in logs" :key="log.id" class="group">
                   <TableCell class="text-xs font-medium">
-                    {{ log.timestamp ? format(new Date(log.timestamp), 'PPpp', { locale: es }) : '-' }}
+                    {{ log.timestamp ? format(parseISO(log.timestamp)!, 'PPpp', { locale: es }) : '-' }}
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary" class="font-mono text-[10px] uppercase">
@@ -448,7 +449,7 @@ onMounted(() => {
               <div>
                 <span class="font-bold block text-muted-foreground uppercase text-[10px]">Fecha del Cambio</span>
                 <span class="text-sm font-medium mt-1 block">
-                  {{ selectedOperationalLog?.fecha ? format(new Date(selectedOperationalLog.fecha), 'PPpp', { locale: es }) : '-' }}
+                  {{ selectedOperationalLog?.fecha ? format(parseISO(selectedOperationalLog.fecha)!, 'PPpp', { locale: es }) : '-' }}
                 </span>
               </div>
               <div>

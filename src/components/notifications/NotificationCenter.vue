@@ -11,8 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { formatDistanceToNow } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { formatDistance } from '@/lib/date-utils'
 import { useRouter } from 'vue-router'
 
 const notificationStore = useNotificationStore()
@@ -101,12 +100,7 @@ const handleNotificationClick = (notification: any) => {
 							{{ notif.mensaje }}
 						</p>
 						<span class="text-[10px] text-muted-foreground mt-1">
-							{{
-								formatDistanceToNow(new Date(notif.fecha_creacion!), {
-									addSuffix: true,
-									locale: es,
-								})
-							}}
+							{{ formatDistance(notif.fecha_creacion) }}
 						</span>
 					</button>
 				</div>

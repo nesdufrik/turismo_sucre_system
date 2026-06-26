@@ -35,8 +35,7 @@ import {
   ExternalLink,
   LockOpen
 } from 'lucide-vue-next'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { formatDateTime } from '@/lib/date-utils'
 import { LiquidationService, type LiquidationWithDetails } from '../LiquidationService'
 import LiquidationStatusBadge from './LiquidationStatusBadge.vue'
 
@@ -309,7 +308,7 @@ const formatCurrency = (amount: number, currency: string = 'USD') => {
             <span class="text-xs text-muted-foreground">Fecha Liquidación</span>
             <div class="flex items-center gap-1">
               <Calendar class="w-3.5 h-3.5 text-muted-foreground" />
-              {{ format(new Date(liquidation.fecha_liquidacion), 'dd/MM/yyyy HH:mm', { locale: es }) }}
+              {{ formatDateTime(liquidation.fecha_liquidacion) }}
             </div>
           </div>
         </div>
@@ -354,7 +353,7 @@ const formatCurrency = (amount: number, currency: string = 'USD') => {
             </div>
             <div class="space-y-0.5" v-if="liquidation.fecha_pago">
               <span class="text-muted-foreground">Fecha de Pago:</span>
-              <div>{{ format(new Date(liquidation.fecha_pago), 'dd/MM/yyyy HH:mm', { locale: es }) }}</div>
+              <div>{{ formatDateTime(liquidation.fecha_pago) }}</div>
             </div>
             <div class="space-y-0.5 col-span-2" v-if="liquidation.comprobante_url">
               <span class="text-muted-foreground block mb-1">Archivo de Comprobante:</span>

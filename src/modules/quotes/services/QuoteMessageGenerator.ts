@@ -1,6 +1,7 @@
 import type { QuoteWithClient, QuoteItemWithDetails } from '../QuoteService'
 import { PriceCalculator } from '../domain/PriceCalculator'
 import type { Tables } from '@/types/database.types'
+import { parseISO } from '@/lib/date-utils'
 
 export type EmailTemplateStyle = 'modern' | 'classic'
 
@@ -37,14 +38,8 @@ export class QuoteMessageGenerator {
 
 	private formatDate(dateStr?: string | null): string {
 		if (!dateStr) return '-'
-		const parts = dateStr.split('-')
-		if (parts.length !== 3) return dateStr
-
-		const year = parseInt(parts[0] || '0')
-		const month = parseInt(parts[1] || '0') - 1
-		const day = parseInt(parts[2] || '0')
-
-		const date = new Date(year, month, day)
+		const date = parseISO(dateStr)
+		if (!date) return '-'
 		return date.toLocaleDateString('es-BO', {
 			day: '2-digit',
 			month: 'short',

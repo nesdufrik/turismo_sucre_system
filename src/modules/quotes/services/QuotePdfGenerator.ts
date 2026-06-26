@@ -3,6 +3,7 @@ import autoTable from 'jspdf-autotable'
 import type { QuoteWithClient, QuoteItemWithDetails } from '../QuoteService'
 import { PriceCalculator } from '../domain/PriceCalculator'
 import type { Tables } from '@/types/database.types'
+import { parseISO } from '@/lib/date-utils'
 
 interface PdfGeneratorOptions {
 	quote: QuoteWithClient
@@ -84,21 +85,8 @@ export class QuotePdfGenerator {
 
 	private formatDate(dateStr?: string | null): string {
 		if (!dateStr) return '-'
-
-		// Split YYYY-MM-DD to avoid timezone shifts
-		const parts = dateStr.split('-')
-		if (parts.length !== 3) return dateStr
-
-		const yearStr = parts[0] || '0'
-		const monthStr = parts[1] || '0'
-		const dayStr = parts[2] || '0'
-
-		const year = parseInt(yearStr)
-		const month = parseInt(monthStr) - 1 // JS months are 0-indexed
-		const day = parseInt(dayStr)
-
-		const date = new Date(year, month, day)
-
+		const date = parseISO(dateStr)
+		if (!date) return '-'
 		return date.toLocaleDateString('es-ES', {
 			day: '2-digit',
 			month: 'short',

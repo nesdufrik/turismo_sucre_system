@@ -53,8 +53,7 @@ import {
 	Users2,
 	Loader2,
 } from 'lucide-vue-next'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { formatDateTime } from '@/lib/date-utils'
 import { toast } from 'vue-sonner'
 import QuoteStatusBadge from '../components/QuoteStatusBadge.vue'
 import QuoteReportDialog from '../components/QuoteReportDialog.vue'
@@ -305,11 +304,7 @@ onUnmounted(() => {
 								class="flex items-center gap-2 text-xs text-muted-foreground"
 							>
 								<Calendar class="w-3 h-3" />
-								{{
-									format(new Date(quote.fecha_creacion), 'dd/MM/yyyy HH:mm', {
-										locale: es,
-									})
-								}}
+								{{ formatDateTime(quote.fecha_creacion) }}
 							</div>
 							<span v-else class="text-xs text-muted-foreground">-</span>
 						</TableCell>

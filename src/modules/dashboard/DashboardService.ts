@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, format } from 'date-fns'
+import { parseISO } from '@/lib/date-utils'
 
 export interface DashboardMetrics {
   totalQuoted: number
@@ -128,7 +129,8 @@ export const DashboardService = {
     
     quotes.forEach(q => {
       // Group by day (YYYY-MM-DD)
-      const dateKey = format(new Date(q.fecha_creacion || ''), 'yyyy-MM-dd')
+      const parsedDate = parseISO(q.fecha_creacion)
+      const dateKey = parsedDate ? format(parsedDate, 'yyyy-MM-dd') : ''
       
       if (!map.has(dateKey)) {
         map.set(dateKey, { quoted: 0, sold: 0 })

@@ -37,8 +37,7 @@ import {
   Eye,
   Plus
 } from 'lucide-vue-next'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { formatDateTime } from '@/lib/date-utils'
 import { toast } from 'vue-sonner'
 import { LiquidationService, type LiquidationWithDetails } from '../LiquidationService'
 import LiquidationStatusBadge from '../components/LiquidationStatusBadge.vue'
@@ -227,7 +226,7 @@ onUnmounted(() => {
             <TableCell>
               <div v-if="liq.fecha_liquidacion" class="flex items-center gap-2 text-xs text-muted-foreground">
                 <Calendar class="w-3 h-3" />
-                {{ format(new Date(liq.fecha_liquidacion), 'dd/MM/yyyy HH:mm', { locale: es }) }}
+                {{ formatDateTime(liq.fecha_liquidacion) }}
               </div>
             </TableCell>
             <TableCell class="font-bold text-primary">

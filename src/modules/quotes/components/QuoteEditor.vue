@@ -7,6 +7,7 @@ import { QuoteService, type Quote } from '../QuoteService'
 import { ClientService } from '@/modules/crm/ClientService'
 import { useQuoteWorkflow } from '../composables/useQuoteWorkflow'
 import { quoteSchema } from '../schemas/quote.schema'
+import { formatDateTime } from '@/lib/date-utils'
 
 // Components
 import { Button } from '@/components/ui/button'
@@ -590,7 +591,7 @@ const onSubmit = form.handleSubmit(async (values) => {
 									{{ item.profiles?.full_name || 'Sistema/Admin' }}
 								</span>
 								<span>
-									{{ new Date(item.fecha_reapertura).toLocaleDateString() }} {{ new Date(item.fecha_reapertura).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+									{{ formatDateTime(item.fecha_reapertura) }}
 								</span>
 							</div>
 							<p class="italic text-foreground bg-muted/40 p-2 rounded border border-dashed border-muted">

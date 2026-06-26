@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import type { Tables } from '@/types/database.types'
+import { parseISO } from '@/lib/date-utils'
 
 export interface QuoteReportData {
 	cotizacion_id: number
@@ -208,9 +209,8 @@ export class QuoteReportPdfGenerator {
 		const headers = [['Fecha', 'Referencia', 'Cliente', 'Estado', 'Subtotal', 'Mon.']]
 
 		const body = this.data.map((item) => {
-			const dateStr = item.fecha_creacion
-				? new Date(item.fecha_creacion).toLocaleDateString('es-ES')
-				: '-'
+			const parsedDate = parseISO(item.fecha_creacion)
+			const dateStr = parsedDate ? parsedDate.toLocaleDateString('es-ES') : '-'
 			let clientName = item.clientes?.nombre_completo || 'General'
 			if (item.clientes?.empresa) clientName += ` (${item.clientes.empresa})`
 
