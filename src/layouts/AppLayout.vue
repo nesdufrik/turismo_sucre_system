@@ -20,6 +20,7 @@ import {
 	ShieldUser,
 	Building2,
 	BadgeDollarSign,
+	BookOpen,
 } from 'lucide-vue-next'
 import {
 	SidebarProvider,
@@ -225,6 +226,21 @@ const breadcrumbs = computed(() => {
 
 			<SidebarFooter>
 				<SidebarMenu>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							as-child
+							tooltip="Documentación"
+						>
+							<a
+								href="https://turismo-sucre-system-manual.vercel.app/"
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								<BookOpen />
+								<span>Documentación</span>
+							</a>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
 					<SidebarMenuItem>
 						<SidebarMenuButton @click="toggleDark()">
 							<Sun v-if="!isDark" />
