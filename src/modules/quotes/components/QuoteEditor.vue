@@ -77,6 +77,7 @@ const form = useForm({
 		codigo_referencia: '',
 		tiene_tour_conductor: false,
 		costo_tour_conductor: 0.00,
+		mostrar_tipo_cambio: true,
 	},
 })
 
@@ -182,6 +183,7 @@ const loadQuote = async (id: number) => {
 			codigo_referencia: quote.codigo_referencia || '',
 			tiene_tour_conductor: quote.tiene_tour_conductor || false,
 			costo_tour_conductor: Number(quote.costo_tour_conductor) || 0.00,
+			mostrar_tipo_cambio: quote.mostrar_tipo_cambio !== false,
 		})
 
 		try {
@@ -505,6 +507,23 @@ const onSubmit = form.handleSubmit(async (values) => {
 										</FormItem>
 									</FormField>
 								</div>
+
+								<FormField v-slot="{ value, handleChange }" name="mostrar_tipo_cambio">
+									<FormItem class="flex flex-row items-center justify-between rounded-lg border p-3 shadow-xs mt-4">
+										<div class="space-y-0.5">
+											<FormLabel>Mostrar Tipo de Cambio en PDF</FormLabel>
+											<div class="text-[11px] text-muted-foreground">
+												Incluir conversión a bolivianos (Bs.) en el pie financiero del documento
+											</div>
+										</div>
+										<FormControl>
+											<Switch
+												:modelValue="value"
+												@update:modelValue="handleChange"
+											/>
+										</FormControl>
+									</FormItem>
+								</FormField>
 
 								<FormField
 									v-slot="{ componentField }"

@@ -18,6 +18,7 @@ export const quoteSchema = z.object({
   codigo_referencia: z.string().optional(),
   tiene_tour_conductor: z.boolean().default(false),
   costo_tour_conductor: z.number().min(0, 'Monto inválido').default(0.00),
+  mostrar_tipo_cambio: z.boolean().default(true),
 })
 
 export type QuoteFormValues = z.infer<typeof quoteSchema>

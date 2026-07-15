@@ -301,6 +301,7 @@ export type Database = {
           tiene_tour_conductor: boolean
           tipo_cambio: number | null
           total_general: number | null
+          mostrar_tipo_cambio: boolean
         }
         Insert: {
           aprobado_por?: string | null
@@ -329,6 +330,7 @@ export type Database = {
           tiene_tour_conductor?: boolean
           tipo_cambio?: number | null
           total_general?: number | null
+          mostrar_tipo_cambio?: boolean
         }
         Update: {
           aprobado_por?: string | null
@@ -357,6 +359,7 @@ export type Database = {
           tiene_tour_conductor?: boolean
           tipo_cambio?: number | null
           total_general?: number | null
+          mostrar_tipo_cambio?: boolean
         }
         Relationships: [
           {
@@ -1164,6 +1167,7 @@ export type Database = {
           tiene_tour_conductor: boolean | null
           tipo_cambio: number | null
           total_general: number | null
+          mostrar_tipo_cambio: boolean | null
         }
         Relationships: [
           {

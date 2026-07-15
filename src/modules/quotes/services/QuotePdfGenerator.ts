@@ -376,7 +376,7 @@ export class QuotePdfGenerator {
 		let boxHeight = 45
 		if (this.quote.tiene_tour_conductor) boxHeight += 12
 		if (commPercent > 0) boxHeight += 6
-		if (currency === 'USD' && totalFinalBOB) boxHeight += 6
+		if (currency === 'USD' && totalFinalBOB && this.quote.mostrar_tipo_cambio !== false) boxHeight += 6
 
 		// Draw Box
 		doc.setDrawColor(200, 200, 200)
@@ -476,7 +476,7 @@ export class QuotePdfGenerator {
 		)
 
 		// Total in BOB and Exchange Rate
-		if (currency === 'USD' && totalFinalBOB) {
+		if (currency === 'USD' && totalFinalBOB && this.quote.mostrar_tipo_cambio !== false) {
 			currentY += 6
 			doc.setFontSize(9)
 			doc.setFont('helvetica', 'normal')
