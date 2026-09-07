@@ -1,10 +1,8 @@
 -- Migración para permitir la reapertura de cotizaciones/liquidaciones por administradores
 -- Registra el nuevo permiso, la tabla de reaperturas, y actualiza las funciones de liquidación y reapertura.
 
--- 1. Registrar permiso de reapertura
-INSERT INTO public.permissions (code, description, module)
-VALUES ('quotes.reopen', 'Reabrir cotizaciones liquidadas o pagadas para edición', 'quotes')
-ON CONFLICT (code) DO NOTHING;
+-- 1. El permiso quotes.reopen (id 14) es dato de negocio: lo restaura seed.sql (id 14, rol admin).
+--    Las migraciones no insertan datos que el seed restaura, para evitar colisiones de claves.
 
 -- 2. Asignar el permiso al rol 'admin'
 INSERT INTO public.role_permissions (role_id, permission_id)
