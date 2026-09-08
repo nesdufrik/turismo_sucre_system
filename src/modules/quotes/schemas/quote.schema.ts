@@ -2,6 +2,9 @@ import { z } from 'zod'
 
 export const quoteSchema = z.object({
   cliente_id: z.number({ required_error: 'El cliente es obligatorio' }),
+  hoja_id: z.number({ required_error: 'La hoja de precios es obligatoria' })
+    .int('La hoja de precios no es válida')
+    .positive('La hoja de precios no es válida'),
   nombre_grupo: z.string().optional(),
   cantidad_pax: z.number().min(1, 'Mínimo 1 pasajero'),
   cantidad_pax_ninos: z.number().min(0, 'Mínimo 0').default(0),

@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
 import { InventoryService } from '@/modules/inventory/InventoryService'
-import { QuoteService, type QuoteItemWithDetails } from '../../QuoteService'
+import {
+	QuoteService,
+	type QuoteItemWithDetails,
+	type ResolvedPrice,
+} from '../../QuoteService'
 import { useConfirm } from '@/composables/useConfirm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -102,6 +106,7 @@ const dateService = ref('')
 const isDateDisabled = ref(false)
 const manualPrice = ref<number | null>(null)
 const foundPrice = ref<number | null>(null)
+const priceResolution = ref<ResolvedPrice<Tables<'preciosservicio'>> | null>(null)
 const customDescription = ref('')
 const appliesCommission = ref(false)
 
@@ -211,24 +216,26 @@ watch([selectedServiceId, dateService], async ([sId, d]) => {
 
 	if (!sId || !props.hojaId || !d) {
 		foundPrice.value = null
+		priceResolution.value = null
 		return
 	}
 
 	isPricing.value = true
+	priceResolution.value = null
+	foundPrice.value = null
 	try {
-		const priceRecord = await QuoteService.findServicePrice(
+		const resolution = await QuoteService.findServicePrice(
 			Number(sId),
 			props.hojaId,
 			totalPaxFisico.value, // Using Total Physical Pax for bracket lookup
 			d,
 		)
-		if (priceRecord) {
-			foundPrice.value = priceRecord.precio_por_persona
-		} else {
-			foundPrice.value = null
-		}
+		priceResolution.value = resolution
+		foundPrice.value = resolution.record?.precio_por_persona ?? null
 	} catch (e) {
 		console.error(e)
+		priceResolution.value = null
+		foundPrice.value = null
 	} finally {
 		isPricing.value = false
 	}
@@ -472,7 +479,7 @@ const onSave = async () => {
 
 				<div class="bg-muted p-4 rounded-md space-y-2">
 					<div class="flex justify-between items-center">
-						<span class="text-sm font-medium">Precio Base (Hojas):</span>
+						<span class="text-sm font-medium">Precio de Hojas:</span>
 						<span class="font-mono" v-if="isPricing">Calculando...</span>
 						<span class="font-mono" v-else-if="foundPrice !== null"
 							>{{ foundPrice }} / pax</span
@@ -481,8 +488,24 @@ const onSave = async () => {
 							>Sin hoja de precios</span
 						>
 						<span class="font-mono text-muted-foreground" v-else
-							>No encontrado</span
+							>Sin precio en hoja seleccionada ni base</span
 						>
+					</div>
+					<div
+						v-if="foundPrice !== null && priceResolution"
+						class="text-xs text-muted-foreground"
+					>
+						{{
+							priceResolution.usedFallback
+								? 'Precio heredado de la hoja base.'
+								: 'Precio de la hoja seleccionada.'
+						}}
+					</div>
+					<div
+						v-if="manualPrice !== null && manualPrice !== 0"
+						class="text-xs text-primary"
+					>
+						Se aplicará el precio manual indicado.
 					</div>
 
 					<div class="grid gap-2">

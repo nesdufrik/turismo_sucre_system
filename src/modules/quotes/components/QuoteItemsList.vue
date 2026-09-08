@@ -52,6 +52,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	(e: 'refresh'): void
+	(e: 'items-count', count: number): void
 }>()
 
 const items = ref<QuoteItemWithDetails[]>([])
@@ -94,6 +95,7 @@ const fetchItems = async () => {
 	isLoading.value = true
 	try {
 		items.value = await QuoteService.getQuoteItems(props.quoteId)
+		emit('items-count', items.value.length)
 	} catch (error: any) {
 		toast.error('Error al cargar items')
 	} finally {

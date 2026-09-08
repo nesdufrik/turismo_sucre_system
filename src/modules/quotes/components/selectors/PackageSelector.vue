@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
 import { InventoryService } from '@/modules/inventory/InventoryService'
-import { QuoteService, type QuoteItemWithDetails } from '../../QuoteService'
+import {
+  QuoteService,
+  type QuoteItemWithDetails,
+} from '../../QuoteService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -145,18 +148,20 @@ const calculatePrice = async () => {
     for (const component of pkg.componentes) {
       if (!component.servicio_id) continue
 
-      const priceData = await QuoteService.findServicePrice(
-        component.servicio_id, 
-        props.hojaId, 
+      const resolution = await QuoteService.findServicePrice(
+        component.servicio_id,
+        props.hojaId,
         totalPaxFisico.value, // Using Total Physical Pax for bracket lookup
         dateService.value
       )
 
-      if (priceData && priceData.precio_por_persona) {
-        const componentTotal = priceData.precio_por_persona * (component.cantidad || 1)
+      const componentPrice = resolution.record?.precio_por_persona
+      if (componentPrice !== null && componentPrice !== undefined) {
+        const componentTotal = componentPrice * (component.cantidad || 1)
         totalPackagePrice += componentTotal
+        const source = resolution.usedFallback ? 'hoja base' : 'hoja seleccionada'
         calculationDetails.value.push(
-          `✅ ${component.servicio?.nombre}: ${priceData.precio_por_persona} x ${component.cantidad} = ${componentTotal}`
+          `✅ ${component.servicio?.nombre} (${source}): ${componentPrice} x ${component.cantidad} = ${componentTotal}`
         )
       } else {
         calculationDetails.value.push(

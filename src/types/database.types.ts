@@ -288,6 +288,7 @@ export type Database = {
           fecha_creacion: string | null
           fecha_validez_hasta: string | null
           fuente_solicitud: string | null
+          hoja_id: number
           id_cuenta_bancaria: string | null
           meta_origen: Json | null
           moneda: string | null
@@ -317,6 +318,7 @@ export type Database = {
           fecha_creacion?: string | null
           fecha_validez_hasta?: string | null
           fuente_solicitud?: string | null
+          hoja_id: number
           id_cuenta_bancaria?: string | null
           meta_origen?: Json | null
           moneda?: string | null
@@ -346,6 +348,7 @@ export type Database = {
           fecha_creacion?: string | null
           fecha_validez_hasta?: string | null
           fuente_solicitud?: string | null
+          hoja_id?: number
           id_cuenta_bancaria?: string | null
           meta_origen?: Json | null
           moneda?: string | null
@@ -367,6 +370,12 @@ export type Database = {
             columns: ["cliente_id"]
             referencedRelation: "clientes"
             referencedColumns: ["cliente_id"]
+          },
+          {
+            foreignKeyName: "cotizaciones_hoja_id_fkey"
+            columns: ["hoja_id"]
+            referencedRelation: "hojasdeprecios"
+            referencedColumns: ["hoja_id"]
           },
           {
             foreignKeyName: "cotizaciones_id_cuenta_bancaria_fkey"

@@ -10,6 +10,38 @@ export type QuoteItem = Tables<'itemscotizacion'>
 export type QuoteItemInsert = TablesInsert<'itemscotizacion'>
 export type QuoteItemUpdate = TablesUpdate<'itemscotizacion'>
 
+export interface ResolvedPrice<T> {
+	record: T | null
+	requestedSheetId: number
+	appliedSheetId: number | null
+	usedFallback: boolean
+}
+
+const createResolvedPrice = <T>(
+	requestedSheetId: number,
+	record: T | null,
+	appliedSheetId: number | null,
+): ResolvedPrice<T> => ({
+	record,
+	requestedSheetId,
+	appliedSheetId,
+	usedFallback:
+		record !== null &&
+		appliedSheetId !== null &&
+		appliedSheetId !== requestedSheetId,
+})
+
+const getDefaultPriceSheetId = async (): Promise<number | null> => {
+	const { data, error } = await supabase
+		.from('hojasdeprecios')
+		.select('hoja_id')
+		.eq('es_default', true)
+		.single()
+
+	if (error && error.code !== 'PGRST116') throw error
+	return data?.hoja_id ?? null
+}
+
 // Paginación
 export interface QuotePaginationParams {
   page: number
@@ -310,7 +342,7 @@ export const QuoteService = {
 		hojaId: number,
 		pax: number,
 		date: string
-	) {
+	): Promise<ResolvedPrice<Tables<'preciosservicio'>>> {
 		const query = (targetHojaId: number) =>
 			supabase
 				.from('preciosservicio')
@@ -325,25 +357,36 @@ export const QuoteService = {
 
 		const { data, error } = await query(hojaId)
 		if (error) throw error
-		if (data && data.length > 0) return data[0]
+		if (data && data.length > 0) {
+			return createResolvedPrice(hojaId, data[0] ?? null, hojaId)
+		}
 
-		const { data: defaultSheet } = await supabase
-			.from('hojasdeprecios')
-			.select('hoja_id')
-			.eq('es_default', true)
-			.single()
+		const defaultSheetId = await getDefaultPriceSheetId()
 
-		if (!defaultSheet || defaultSheet.hoja_id === hojaId) return null
+		if (!defaultSheetId || defaultSheetId === hojaId) {
+			return createResolvedPrice<Tables<'preciosservicio'>>(
+				hojaId,
+				null,
+				null,
+			)
+		}
 
 		const { data: defaultData, error: defaultError } = await query(
-			defaultSheet.hoja_id
+			defaultSheetId
 		)
 		if (defaultError) throw defaultError
 
-		return defaultData?.[0] || null
+		return createResolvedPrice(
+			hojaId,
+			defaultData?.[0] ?? null,
+			defaultData?.[0] ? defaultSheetId : null,
+		)
 	},
 
-	async findRoomPrice(habitacionId: number, hojaId: number) {
+	async findRoomPrice(
+		habitacionId: number,
+		hojaId: number,
+	): Promise<ResolvedPrice<Tables<'precioshabitacion'>>> {
 		const query = (targetHojaId: number) =>
 			supabase
 				.from('precioshabitacion')
@@ -354,23 +397,29 @@ export const QuoteService = {
 
 		const { data, error } = await query(hojaId)
 
-		if (data) return data
+		if (data) return createResolvedPrice(hojaId, data, hojaId)
 		if (error && error.code !== 'PGRST116') throw error
 
-		const { data: defaultSheet } = await supabase
-			.from('hojasdeprecios')
-			.select('hoja_id')
-			.eq('es_default', true)
-			.single()
+		const defaultSheetId = await getDefaultPriceSheetId()
 
-		if (!defaultSheet || defaultSheet.hoja_id === hojaId) return null
+		if (!defaultSheetId || defaultSheetId === hojaId) {
+			return createResolvedPrice<Tables<'precioshabitacion'>>(
+				hojaId,
+				null,
+				null,
+			)
+		}
 
 		const { data: defaultData, error: defaultError } = await query(
-			defaultSheet.hoja_id
+			defaultSheetId
 		)
 		if (defaultError && defaultError.code !== 'PGRST116') throw defaultError
 
-		return defaultData || null
+		return createResolvedPrice(
+			hojaId,
+			defaultData ?? null,
+			defaultData ? defaultSheetId : null,
+		)
 	},
 
     async getFullQuoteContext(quoteId: number) {

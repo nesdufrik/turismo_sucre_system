@@ -5,6 +5,7 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { QuoteService, type Quote } from '../QuoteService'
 import { ClientService } from '@/modules/crm/ClientService'
+import { SettingsService } from '@/modules/settings/SettingsService'
 import { useQuoteWorkflow } from '../composables/useQuoteWorkflow'
 import { quoteSchema } from '../schemas/quote.schema'
 import { formatDateTime } from '@/lib/date-utils'
@@ -52,8 +53,8 @@ const showSourcePanel = ref(false)
 
 const clients = ref<Tables<'clientes'>[]>([])
 const bankAccounts = ref<Tables<'cuentas_bancarias'>[]>([])
+const priceSheets = ref<Tables<'hojasdeprecios'>[]>([])
 const currentQuote = ref<Quote | null>(null)
-const currentHojaId = ref<number | null>(null)
 const selectedClientObject = ref<Tables<'clientes'> | null>(null)
 const reopeningHistory = ref<any[]>([])
 
@@ -81,6 +82,21 @@ const form = useForm({
 	},
 })
 
+const currentHojaId = computed<number | null>(() => {
+	const hojaId = Number(form.values.hoja_id)
+	return Number.isInteger(hojaId) && hojaId > 0 ? hojaId : null
+})
+
+const itemsLoaded = ref(!props.quoteId)
+const itemsCount = ref(0)
+const priceSheetLocked = computed(
+	() => Boolean(props.quoteId && (!itemsLoaded.value || itemsCount.value > 0)),
+)
+
+const defaultPriceSheetId = computed<number | null>(() => {
+	return priceSheets.value.find((sheet) => sheet.es_default)?.hoja_id ?? null
+})
+
 const paxEfectivo = computed(() => {
 	const adults = Number(form.values.cantidad_pax) || 1
 	const kids = Number(form.values.cantidad_pax_ninos) || 0
@@ -90,15 +106,23 @@ const paxEfectivo = computed(() => {
 
 const loadDependencies = async () => {
 	try {
-		const [clientsData, banksData] = await Promise.all([
+		const [clientsData, banksData, priceSheetsData] = await Promise.all([
 			ClientService.searchClients(''), // Load 20 recent instead of all
 			QuoteService.getBankAccounts(),
+			SettingsService.getPriceSheets(),
 		])
 		clients.value = clientsData
 		bankAccounts.value = banksData
+		priceSheets.value = priceSheetsData
 
 		// If it's a new quote, load system defaults
 		if (!props.quoteId) {
+			const defaultSheet = priceSheetsData.find((sheet) => sheet.es_default)
+			if (!defaultSheet) {
+				throw new Error('No existe una hoja de precios por defecto')
+			}
+			form.setFieldValue('hoja_id', defaultSheet.hoja_id)
+
 			const config = await QuoteService.getSystemConfig()
 			if (config) {
 				form.setValues({
@@ -122,33 +146,37 @@ const searchClients = async (query: string) => {
 	return await ClientService.searchClients(query)
 }
 
-// Watch for client selection to update Hoja ID
+const suggestPriceSheetForClient = (client: Tables<'clientes'> | null) => {
+	const suggestedSheetId = client?.hoja_id ?? defaultPriceSheetId.value
+	if (suggestedSheetId !== null) {
+		form.setFieldValue('hoja_id', suggestedSheetId)
+	}
+}
+
+// A client suggests a sheet only while creating a quote. Existing quotes use their persisted sheet.
 watch(
 	() => form.values.cliente_id,
 	(newId) => {
-		if (newId) {
-			// Check if we have the full object from @select
-			if (
-				selectedClientObject.value &&
-				selectedClientObject.value.cliente_id === newId
-			) {
-				currentHojaId.value = selectedClientObject.value.hoja_id
-				return
-			}
-			// Fallback to local clients list
-			const client = clients.value.find((c) => c.cliente_id === newId)
-			if (client) {
-				currentHojaId.value = client.hoja_id
-			}
-		} else {
-			currentHojaId.value = null
-		}
+		if (props.quoteId || !newId) return
+
+		const clientId = Number(newId)
+		const client =
+			selectedClientObject.value?.cliente_id === clientId
+				? selectedClientObject.value
+				: clients.value.find((item) => item.cliente_id === clientId) || null
+
+		suggestPriceSheetForClient(client)
 	},
 )
 
 const onClientSaved = async (newClientId: number) => {
 	await loadDependencies()
 	form.setFieldValue('cliente_id', newClientId)
+}
+
+const onItemsCount = (count: number) => {
+	itemsCount.value = count
+	itemsLoaded.value = true
 }
 
 const loadQuote = async (id: number) => {
@@ -167,6 +195,7 @@ const loadQuote = async (id: number) => {
 
 		form.setValues({
 			cliente_id: quote.cliente_id || undefined,
+			hoja_id: quote.hoja_id,
 			nombre_grupo: quote.nombre_grupo || '',
 			cantidad_pax: quote.cantidad_pax || 1,
 			cantidad_pax_ninos: quote.cantidad_pax_ninos || 0,
@@ -438,6 +467,40 @@ const onSubmit = form.handleSubmit(async (values) => {
 									Configuración Financiera
 								</h4>
 
+								<FormField v-slot="{ value, handleChange }" name="hoja_id">
+									<FormItem>
+										<FormLabel>Hoja de Precios para esta Cotización</FormLabel>
+										<Select
+											:model-value="value == null ? undefined : String(value)"
+											:disabled="!canEdit || priceSheets.length === 0 || priceSheetLocked"
+											@update:model-value="(newValue) => handleChange(Number(newValue))"
+										>
+											<FormControl>
+												<SelectTrigger>
+													<SelectValue placeholder="Seleccionar tarifa..." />
+												</SelectTrigger>
+											</FormControl>
+											<SelectContent>
+												<SelectItem
+													v-for="sheet in priceSheets"
+													:key="sheet.hoja_id"
+													:value="String(sheet.hoja_id)"
+												>
+													{{ sheet.nombre }}
+													{{ sheet.es_default ? '(Base)' : '' }}
+												</SelectItem>
+											</SelectContent>
+										</Select>
+										<div v-if="priceSheetLocked" class="text-[11px] text-warning">
+											La hoja no puede cambiarse mientras la cotización tenga artículos.
+										</div>
+										<div v-else class="text-[11px] text-muted-foreground">
+											Los precios personalizados tienen prioridad; los faltantes se buscan en la hoja base.
+										</div>
+										<FormMessage />
+									</FormItem>
+								</FormField>
+
 								<div class="grid grid-cols-2 gap-4">
 									<FormField v-slot="{ componentField }" name="moneda">
 										<FormItem>
@@ -642,6 +705,7 @@ const onSubmit = form.handleSubmit(async (values) => {
 						:tiene-tour-conductor="form.values.tiene_tour_conductor || false"
 						:costo-tour-conductor="form.values.costo_tour_conductor || 0"
 						:readonly="!canEdit"
+						@items-count="onItemsCount"
 						@refresh="quoteId && loadQuote(quoteId)"
 					/>
 				</div>

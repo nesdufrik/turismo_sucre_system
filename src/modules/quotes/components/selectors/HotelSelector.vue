@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
 import { InventoryService } from '@/modules/inventory/InventoryService'
-import { QuoteService, type QuoteItemWithDetails } from '../../QuoteService'
+import {
+	QuoteService,
+	type QuoteItemWithDetails,
+	type ResolvedPrice,
+} from '../../QuoteService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
@@ -108,6 +112,7 @@ const dateCheckIn = ref('')
 const dateCheckOut = ref('')
 const manualPrice = ref<number | null>(null)
 const foundPrice = ref<number | null>(null)
+const priceResolution = ref<ResolvedPrice<Tables<'precioshabitacion'>> | null>(null)
 const customDescription = ref('')
 // Removed esPorPax
 
@@ -235,23 +240,24 @@ watch([selectedRoomId], async ([rId]) => {
 
 	if (!rId || !props.hojaId) {
 		foundPrice.value = null
+		priceResolution.value = null
 		return
 	}
 
 	isPricing.value = true
+	priceResolution.value = null
+	foundPrice.value = null
 	try {
 		// Hotel prices are usually simpler: Room ID + Sheet
-		const priceRecord = await QuoteService.findRoomPrice(
+		const resolution = await QuoteService.findRoomPrice(
 			Number(rId),
 			props.hojaId,
 		)
-		if (priceRecord) {
-			foundPrice.value = priceRecord.precio_por_noche
-		} else {
-			foundPrice.value = null
-		}
+		priceResolution.value = resolution
+		foundPrice.value = resolution.record?.precio_por_noche ?? null
 	} catch (e) {
 		console.error(e)
+		priceResolution.value = null
 		foundPrice.value = null
 	} finally {
 		isPricing.value = false
@@ -464,8 +470,24 @@ const onSave = async () => {
 							>Sin hoja de precios</span
 						>
 						<span class="font-mono text-muted-foreground" v-else
-							>No encontrado</span
+							>Sin precio en hoja seleccionada ni base</span
 						>
+					</div>
+					<div
+						v-if="foundPrice !== null && priceResolution"
+						class="text-xs text-muted-foreground"
+					>
+						{{
+							priceResolution.usedFallback
+								? 'Precio heredado de la hoja base.'
+								: 'Precio de la hoja seleccionada.'
+						}}
+					</div>
+					<div
+						v-if="manualPrice !== null && manualPrice !== 0"
+						class="text-xs text-primary"
+					>
+						Se aplicará el precio manual indicado.
 					</div>
 
 					<div class="grid gap-2">
