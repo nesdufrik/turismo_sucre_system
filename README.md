@@ -28,7 +28,7 @@ Sistema avanzado de gestión de cotizaciones turísticas diseñado para optimiza
 ### 👥 CRM e Inventario
 
 - **Gestión de Clientes:** Soporte para personas particulares y empresas/agencias con múltiples contactos.
-- **Hojas de Precios:** Sistema de tarifas diferenciadas asignables por cliente.
+- **Hojas de Precios:** Sistema de tarifas diferenciadas con una hoja base y hojas personalizadas por temporada, gestión o situación especial. Las hojas personalizadas solo sobrescriben los precios que cambian y pueden seleccionarse por cotización.
 - **Maestros e Inventario:** Administración centralizada de servicios, hoteles, categorías y ubicaciones con UX mejorada.
 - **Perfil de Agencia:** Módulo para administrar los datos e identidad visual de la agencia, utilizados dinámicamente en los documentos PDF generados.
 
@@ -93,9 +93,6 @@ pnpm dev
 ```bash
 # Generar tipos de Supabase
 supabase gen types typescript --local > src/types/database.types.ts
-
-# Ejecutar pruebas unitarias (Vitest)
-pnpm test
 
 # Build de producción
 pnpm build

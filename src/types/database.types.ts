@@ -745,24 +745,24 @@ export type Database = {
       }
       precioshabitacion: {
         Row: {
-          habitacion_id: number | null
-          hoja_id: number | null
+          habitacion_id: number
+          hoja_id: number
           precio_hab_id: number
-          precio_por_noche: number | null
+          precio_por_noche: number
           temporada: string | null
         }
         Insert: {
-          habitacion_id?: number | null
-          hoja_id?: number | null
+          habitacion_id: number
+          hoja_id: number
           precio_hab_id?: never
-          precio_por_noche?: number | null
+          precio_por_noche: number
           temporada?: string | null
         }
         Update: {
-          habitacion_id?: number | null
-          hoja_id?: number | null
+          habitacion_id?: number
+          hoja_id?: number
           precio_hab_id?: never
-          precio_por_noche?: number | null
+          precio_por_noche?: number
           temporada?: string | null
         }
         Relationships: [
@@ -782,34 +782,34 @@ export type Database = {
       }
       preciosservicio: {
         Row: {
-          hoja_id: number | null
-          max_pax: number | null
-          min_pax: number | null
+          hoja_id: number
+          max_pax: number
+          min_pax: number
           precio_id: number
-          precio_por_persona: number | null
-          servicio_id: number | null
+          precio_por_persona: number
+          servicio_id: number
           temporada: string | null
           valido_desde: string | null
           valido_hasta: string | null
         }
         Insert: {
-          hoja_id?: number | null
-          max_pax?: number | null
-          min_pax?: number | null
+          hoja_id: number
+          max_pax: number
+          min_pax: number
           precio_id?: never
-          precio_por_persona?: number | null
-          servicio_id?: number | null
+          precio_por_persona: number
+          servicio_id: number
           temporada?: string | null
           valido_desde?: string | null
           valido_hasta?: string | null
         }
         Update: {
-          hoja_id?: number | null
-          max_pax?: number | null
-          min_pax?: number | null
+          hoja_id?: number
+          max_pax?: number
+          min_pax?: number
           precio_id?: never
-          precio_por_persona?: number | null
-          servicio_id?: number | null
+          precio_por_persona?: number
+          servicio_id?: number
           temporada?: string | null
           valido_desde?: string | null
           valido_hasta?: string | null

@@ -10,6 +10,24 @@ Reducir resultados ambiguos y evitar estados inválidos en hojas base y tablas d
 - Respaldo de la base de datos.
 - Auditoría previa de duplicados y solapamientos.
 
+## Resultado De Auditoría
+
+Auditoría ejecutada el 8 de septiembre de 2026 sobre la base conectada:
+
+- Existe una sola hoja base: `TARIFARIO TURISMO SUCRE` (`hoja_id = 2`).
+- No existen hojas de precios duplicadas como base.
+- `preciosservicio` no tiene nulos en hoja, servicio, rango pax o precio.
+- `preciosservicio` no tiene rangos pax invertidos ni fechas inválidas.
+- `precioshabitacion` no tiene nulos, precios negativos ni habitaciones duplicadas por hoja.
+- Existen siete pares de precios de servicios que se solapan:
+  - `Transfer Aeropuerto de Alcantari`, precios `43/608`, rango `11–15`, importes distintos.
+  - `Transfer Aeropuerto de Alcantari`, precios `44/45`, rangos `16–24` y `24–100`; el pax 24 coincide por los límites inclusivos actuales.
+  - `Tarabuco FD + Almuerzo`, precios `138/643`, rango `4–5`, importes distintos.
+  - `Transfer In o Out Terminal La Paz sin guia`, precios `770/771`, rango `11–15`, mismo importe.
+  - `Cena en Hotel` de la hoja `Claudia Rivera Fremen`, precio `822` (`4–21`) junto a `847` (`6–10`), `848` (`11–15`) y `849` (`16–21`).
+
+Los registros anteriores no se eliminan ni fusionan automáticamente porque algunos pueden representar correcciones comerciales y otros pueden ser redundancias con el mismo importe. La búsqueda ahora tiene orden determinista y los nuevos solapamientos quedan bloqueados.
+
 ## Regla De Ejecución
 
 Esta tarea debe dividirse internamente en dos entregas:
@@ -47,6 +65,18 @@ Después de limpiar los datos:
 - Definir una política para rangos de pasajeros y fechas solapados.
 - Rechazar nuevos rangos inválidos o ambiguos mediante restricciones, trigger o validación de servicio.
 
+La migración aplicada en esta entrega implementa el endurecimiento compatible con los datos actuales:
+
+- Índice único para impedir más de una hoja base.
+- Trigger que impide eliminar o desactivar la única hoja base.
+- Columnas obligatorias y checks de rangos/precios válidos.
+- Unicidad `hoja_id + habitacion_id` para precios de habitaciones.
+- Índice compuesto `hoja_id + servicio_id`.
+- Trigger que rechaza nuevos rangos solapados y cambios de rango que creen solapamientos.
+- Orden determinista en la búsqueda de precios de servicios.
+
+La exclusion constraint PostgreSQL para todo el histórico queda diferida hasta decidir cómo resolver los siete pares identificados.
+
 Si se requiere una restricción de exclusión PostgreSQL para rangos, evaluar previamente la extensión `btree_gist`, la representación de rangos abiertos y el tratamiento de límites inclusivos. No aplicarla sin comprobar que respeta la semántica actual de fechas y pax.
 
 ## Archivos Previstos
@@ -81,4 +111,4 @@ Ejecutar los asesores de seguridad y rendimiento de Supabase después de aplicar
 
 ## Salida De La Tarea
 
-La tarea termina cuando los conflictos existentes tienen una decisión, las restricciones no rompen datos válidos y las búsquedas ambiguas tienen una prioridad determinista.
+La tarea termina cuando los conflictos existentes están documentados, las restricciones aplicadas no rompen datos válidos y las búsquedas ambiguas tienen una prioridad determinista. La resolución comercial de los siete pares queda como seguimiento explícito.

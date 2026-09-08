@@ -42,8 +42,8 @@ El precio que finalmente se agrega a la cotización continúa guardándose como 
 | Completada | [02 - Selector](./02-quote-price-sheet-selector.md) | El usuario puede elegir la hoja durante la creación |
 | Completada | [03 - Fallback explícito](./03-explicit-price-fallback.md) | La interfaz comunica si usa hoja seleccionada o base |
 | Completada | [04 - Bloqueo](./04-lock-price-sheet-after-items.md) | No se mezclan hojas accidentalmente después de agregar artículos |
-| Pendiente | [05 - Integridad](./05-pricing-integrity.md) | Se reducen resultados ambiguos y estados inválidos |
-| Pendiente | [06 - Despliegue y documentación](./06-rollout-and-user-docs.md) | La funcionalidad queda lista para desplegar y documentada |
+| Completada* | [05 - Integridad](./05-pricing-integrity.md) | Se reducen resultados ambiguos y estados inválidos |
+| Completada | [06 - Despliegue y documentación](./06-rollout-and-user-docs.md) | La funcionalidad queda lista para desplegar y documentada |
 
 ## Orden De Ejecución
 
@@ -55,6 +55,8 @@ El precio que finalmente se agrega a la cotización continúa guardándose como 
 6. Completar la Tarea 06 antes de desplegar a producción.
 
 Las Tareas 01–04 forman el MVP funcional. La Tarea 05 puede posponerse sin impedir el uso básico, pero sus hallazgos deben quedar registrados. La Tarea 06 es obligatoria antes del cierre.
+
+\* La Tarea 05 deja siete solapamientos históricos de servicios documentados; no se eliminaron automáticamente y requieren decisión de negocio antes de aplicar una exclusión absoluta.
 
 ## Convenciones De Trabajo
 

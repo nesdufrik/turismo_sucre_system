@@ -353,6 +353,9 @@ export const QuoteService = {
 				.gte('max_pax', pax)
 				.or(`valido_desde.is.null,valido_desde.lte.${date}`)
 				.or(`valido_hasta.is.null,valido_hasta.gte.${date}`)
+				.order('valido_desde', { ascending: false, nullsFirst: false })
+				.order('min_pax', { ascending: true })
+				.order('precio_id', { ascending: true })
 				.limit(1)
 
 		const { data, error } = await query(hojaId)
